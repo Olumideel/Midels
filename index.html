@@ -1,0 +1,1038 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>global culinary hub — flavors without borders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet"/>
+<style>
+:root{--navy:#1b2b4b;--blue:#2c5282;--bl:#3b6cb7;--sky:#ebf2ff;--ice:#f4f8ff;--white:#fff;--muted:#6b7a99;--border:#d0dcf0;--accent:#7ec8e3;--green:#27ae60;--orange:#e67e22;--red:#e74c3c;--display:'DM Serif Display',georgia,serif;--body:'DM Sans',system-ui,sans-serif;--r:8px;--rm:14px;--rl:20px;--rx:28px;--sc:0 2px 16px rgba(27,43,75,.10);--sh:0 8px 40px rgba(27,43,75,.18);--sx:0 20px 60px rgba(27,43,75,.22);--t:.28s cubic-bezier(.4,0,.2,1);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;font-size:16px;}
+body{font-family:var(--body);color:var(--navy);background:#fff;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+a{text-decoration:none;color:inherit;}ul{list-style:none;}
+button{font-family:var(--body);cursor:pointer;border:none;background:none;}
+input,textarea,select{font-family:var(--body);}
+.wrap{max-width:1160px;margin:0 auto;padding:0 28px;}
+.lbl{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--bl);margin-bottom:14px;}
+.h2{font-family:var(--display);font-size:clamp(28px,4vw,46px);line-height:1.12;color:var(--navy);margin-bottom:16px;}
+.sub{font-size:17px;line-height:1.7;color:var(--muted);max-width:560px;}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:var(--r);font-size:15px;font-weight:600;font-family:var(--body);transition:all var(--t);white-space:nowrap;border:none;cursor:pointer;}
+.bp{background:var(--blue);color:#fff;box-shadow:0 2px 12px rgba(44,82,130,.25);}
+.bp:hover{background:var(--bl);transform:translateY(-2px);box-shadow:0 6px 24px rgba(44,82,130,.35);}
+.bo{background:transparent;color:var(--blue);border:1.5px solid var(--blue);}
+.bo:hover{background:var(--blue);color:#fff;transform:translateY(-2px);}
+.bw{background:#fff;color:var(--navy);font-weight:700;}
+.bw:hover{background:var(--sky);transform:translateY(-2px);}
+.bgw{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.4);}
+.bgw:hover{background:rgba(255,255,255,.15);transform:translateY(-2px);}
+.bg{background:var(--green);color:#fff;}.bg:hover{background:#219a52;transform:translateY(-2px);}
+.br{background:var(--red);color:#fff;}.br:hover{background:#c0392b;transform:translateY(-2px);}
+.rv{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease;}
+.rv.vis{opacity:1;transform:none;}
+.d1{transition-delay:.1s}.d2{transition-delay:.2s}.d3{transition-delay:.3s}.d4{transition-delay:.4s}
+#nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(255,255,255,.94);backdrop-filter:blur(20px);border-bottom:1px solid transparent;transition:border-color var(--t),box-shadow var(--t);}
+#nav.sc{border-color:var(--border);box-shadow:0 2px 20px rgba(27,43,75,.08);}
+.ni{display:flex;align-items:center;height:70px;}
+.logo{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-right:auto;}
+.logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--blue),var(--bl));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.logo-text{font-family:var(--display);font-size:18px;color:var(--navy);line-height:1.2;}
+.logo-text span{color:var(--bl);}
+.nlinks{display:flex;align-items:center;gap:2px;margin:0 16px;}
+.nlinks a{padding:8px 11px;font-size:14px;font-weight:500;color:var(--muted);border-radius:var(--r);transition:all var(--t);}
+.nlinks a:hover,.nlinks a.on{color:var(--navy);background:var(--sky);}
+.ncta{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.nlogin{padding:8px 14px;font-size:14px;font-weight:500;color:var(--muted);border-radius:var(--r);transition:all var(--t);cursor:pointer;}
+.nlogin:hover{color:var(--navy);background:var(--sky);}
+.nup{padding:9px 18px;background:var(--blue);color:#fff;border-radius:var(--r);font-size:14px;font-weight:700;font-family:var(--body);transition:all var(--t);cursor:pointer;}
+.nup:hover{background:var(--bl);transform:translateY(-1px);}
+.nav-social-icons{display:flex;align-items:center;gap:4px;margin-right:8px;}
+.nav-icon-btn{position:relative;width:36px;height:36px;border-radius:var(--r);background:var(--sky);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;transition:all var(--t);cursor:pointer;}
+.nav-icon-btn:hover{background:var(--blue);color:#fff;border-color:var(--blue);}
+.nav-badge{position:absolute;top:-4px;right:-4px;width:18px;height:18px;background:var(--red);color:#fff;border-radius:50%;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;}
+.nav-badge.hidden{display:none;}
+.ham{display:none;flex-direction:column;gap:5px;padding:8px;margin-left:auto;}
+.ham span{display:block;width:24px;height:2px;background:var(--navy);border-radius:2px;transition:all .3s;}
+.ham.op span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.ham.op span:nth-child(2){opacity:0;}
+.ham.op span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+#mm{display:none;flex-direction:column;background:#fff;padding:16px 24px 24px;border-top:1px solid var(--border);gap:4px;}
+#mm.op{display:flex;}
+#mm a{display:block;padding:12px 16px;font-size:15px;font-weight:500;color:var(--navy);border-radius:var(--r);}
+#mm a:hover{background:var(--sky);}
+#mm .btn{margin-top:8px;width:100%;justify-content:center;}
+#hero{min-height:100vh;display:flex;align-items:center;padding:120px 0 80px;position:relative;overflow:hidden;}
+.hbg{position:absolute;inset:0;background:linear-gradient(135deg,#0f1f3d,#1b2b4b 40%,#2c5282 75%,#3b6cb7);}
+.orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:.25;animation:flt 8s ease-in-out infinite;}
+.o1{width:600px;height:600px;background:radial-gradient(circle,#5b8def,transparent);top:-200px;right:-150px;}
+.o2{width:400px;height:400px;background:radial-gradient(circle,#2c5282,transparent);bottom:-100px;left:-100px;animation-delay:-3s;}
+.o3{width:300px;height:300px;background:radial-gradient(circle,#4a90d9,transparent);top:50%;left:40%;animation-delay:-5s;}
+@keyframes flt{0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(20px,-30px) scale(1.05);}66%{transform:translate(-15px,20px) scale(.95);}}
+.hgrid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:60px 60px;}
+.hc{position:relative;z-index:1;max-width:700px;}
+.hbadge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);padding:6px 16px;border-radius:99px;font-size:13px;font-weight:500;color:rgba(255,255,255,.9);margin-bottom:28px;animation:fup .7s ease both;}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:blnk 2s infinite;}
+@keyframes blnk{0%,100%{opacity:1;}50%{opacity:.3;}}
+.htitle{font-family:var(--display);font-size:clamp(40px,6.5vw,78px);line-height:1.05;color:#fff;margin-bottom:24px;animation:fup .7s .1s ease both;}
+.htitle em{font-style:italic;color:var(--accent);}
+.hsub{font-size:clamp(16px,2vw,19px);color:rgba(255,255,255,.72);line-height:1.7;margin-bottom:44px;max-width:560px;animation:fup .7s .2s ease both;}
+.hact{display:flex;gap:16px;flex-wrap:wrap;animation:fup .7s .3s ease both;}
+.hstats{display:flex;gap:40px;flex-wrap:wrap;margin-top:72px;padding-top:40px;border-top:1px solid rgba(255,255,255,.12);animation:fup .7s .45s ease both;}
+.hsn{font-family:var(--display);font-size:32px;color:#fff;letter-spacing:-.02em;}
+.hsn span{color:var(--accent);}
+.hsl{font-size:13px;color:rgba(255,255,255,.55);margin-top:2px;}
+@keyframes fup{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+#about{padding:112px 0;}
+.ag{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;}
+.abody{font-size:16px;color:var(--muted);line-height:1.8;margin-bottom:32px;}
+.apills{display:flex;flex-direction:column;gap:12px;margin-bottom:36px;}
+.ap{display:flex;align-items:flex-start;gap:14px;padding:16px 20px;background:var(--ice);border-radius:var(--rm);border:1px solid var(--border);transition:border-color var(--t),box-shadow var(--t);}
+.ap:hover{border-color:var(--bl);box-shadow:var(--sc);}
+.api{width:40px;height:40px;flex-shrink:0;background:linear-gradient(135deg,var(--sky),#d6e8ff);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.apl{font-size:14px;font-weight:600;color:var(--navy);margin-bottom:2px;}
+.apd{font-size:13px;color:var(--muted);line-height:1.5;}
+.aimg{position:relative;}
+.aframe{width:100%;aspect-ratio:4/5;background:linear-gradient(145deg,var(--sky),#c8deff,var(--border));border-radius:var(--rx);display:flex;align-items:center;justify-content:center;font-size:80px;box-shadow:var(--sh);position:relative;overflow:hidden;}
+.aframe::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 60%,rgba(27,43,75,.15));}
+.afloat{position:absolute;bottom:-20px;left:-20px;background:#fff;border:1px solid var(--border);border-radius:var(--rm);padding:16px 20px;box-shadow:var(--sh);display:flex;align-items:center;gap:12px;}
+.afn{font-family:var(--display);font-size:22px;color:var(--navy);}
+.afl{font-size:12px;color:var(--muted);}
+#services{padding:112px 0;background:var(--ice);}
+.sh{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:end;margin-bottom:64px;}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+.sc-card{background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:36px 32px;transition:all var(--t);position:relative;overflow:hidden;display:flex;flex-direction:column;}
+.sc-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),var(--bl));opacity:0;transition:opacity var(--t);}
+.sc-card:hover{transform:translateY(-6px);box-shadow:var(--sh);border-color:rgba(44,82,130,.2);}
+.sc-card:hover::before{opacity:1;}
+.sci{width:56px;height:56px;background:linear-gradient(135deg,var(--sky),#d6e8ff);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:24px;transition:transform var(--t);}
+.sc-card:hover .sci{transform:scale(1.1) rotate(-4deg);}
+.sct{font-size:19px;font-weight:700;color:var(--navy);margin-bottom:10px;}
+.scd{font-size:15px;color:var(--muted);line-height:1.7;margin-bottom:20px;flex:1;}
+.scl{font-size:14px;font-weight:600;color:var(--bl);display:flex;align-items:center;gap:6px;transition:gap var(--t);margin-top:auto;}
+.sc-card:hover .scl{gap:10px;}
+#portfolio{padding:112px 0;}
+.ph{text-align:center;margin-bottom:48px;}
+.pfilter{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:28px;margin-bottom:48px;}
+.pfb{padding:8px 20px;border:1.5px solid var(--border);border-radius:99px;font-size:14px;font-weight:500;color:var(--muted);background:#fff;transition:all var(--t);cursor:pointer;}
+.pfb.on,.pfb:hover{background:var(--blue);color:#fff;border-color:var(--blue);}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+.pc-card{border-radius:var(--rl);overflow:hidden;position:relative;aspect-ratio:4/3;cursor:pointer;}
+.pimg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:56px;transition:transform .45s ease;}
+.pc-card:nth-child(1) .pimg{background:linear-gradient(135deg,#c8deff,#a8c8f5);}
+.pc-card:nth-child(2) .pimg{background:linear-gradient(135deg,#d0e8ff,#b0d0f0);}
+.pc-card:nth-child(3) .pimg{background:linear-gradient(135deg,#b8d8ff,#90b8e8);}
+.pc-card:nth-child(4) .pimg{background:linear-gradient(135deg,#a0c8f8,#80a8d8);}
+.pc-card:nth-child(5) .pimg{background:linear-gradient(135deg,#c0d8ff,#a0c0e8);}
+.pc-card:nth-child(6) .pimg{background:linear-gradient(135deg,#d8e8ff,#b8d0f0);}
+.pov{position:absolute;inset:0;background:linear-gradient(to top,rgba(15,31,61,.92),rgba(15,31,61,.4) 60%,transparent);display:flex;flex-direction:column;justify-content:flex-end;padding:28px 24px;opacity:0;transition:opacity .35s;}
+.pc-card:hover .pov{opacity:1;}
+.pc-card:hover .pimg{transform:scale(1.07);}
+.ptag{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;}
+.pname{font-size:18px;font-weight:700;color:#fff;margin-bottom:4px;}
+.pmeta{font-size:13px;color:rgba(255,255,255,.65);}
+#lb{display:none;position:fixed;inset:0;background:rgba(10,20,40,.9);z-index:5000;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);}
+#lb.op{display:flex;animation:lbf .25s ease;}
+@keyframes lbf{from{opacity:0;}to{opacity:1;}}
+.lbcard{background:#fff;border-radius:var(--rx);max-width:640px;width:100%;overflow:hidden;position:relative;animation:lbu .3s ease;}
+@keyframes lbu{from{transform:scale(.93);}to{transform:scale(1);}}
+.lbimg{height:280px;display:flex;align-items:center;justify-content:center;font-size:96px;position:relative;}
+.lbclose{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.4);color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1;transition:background .2s;}
+.lbclose:hover{background:rgba(0,0,0,.7);}
+.lbbody{padding:30px 36px 36px;}
+.lbtag{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--bl);margin-bottom:8px;}
+.lbtitle{font-family:var(--display);font-size:28px;color:var(--navy);margin-bottom:6px;}
+.lbmeta{font-size:14px;color:var(--muted);margin-bottom:14px;}
+.lbdesc{font-size:15px;color:var(--muted);line-height:1.7;margin-bottom:24px;}
+.lbact{display:flex;gap:12px;}
+#testimonials{padding:112px 0;background:var(--navy);}
+#testimonials .lbl{color:var(--accent);}
+#testimonials .h2{color:#fff;}
+#testimonials .sub{color:rgba(255,255,255,.6);}
+.thead{text-align:center;margin-bottom:60px;}
+.thead .sub{margin:0 auto;}
+.cwrap{position:relative;overflow:hidden;}
+.ctrack{display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1);}
+.tslide{min-width:100%;padding:0 16px;}
+.tinner{max-width:760px;margin:0 auto;text-align:center;}
+.tstars{font-size:20px;color:#f5c542;margin-bottom:28px;letter-spacing:4px;}
+.tquote{font-family:var(--display);font-size:clamp(20px,3vw,26px);color:#fff;line-height:1.55;font-style:italic;margin-bottom:36px;}
+.tauth{display:flex;align-items:center;gap:16px;justify-content:center;}
+.tav{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;flex-shrink:0;}
+.tname{font-size:16px;font-weight:700;color:#fff;}
+.trole{font-size:13px;color:rgba(255,255,255,.55);}
+.cctrl{display:flex;align-items:center;justify-content:center;gap:24px;margin-top:48px;}
+.cbtn{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all var(--t);cursor:pointer;}
+.cbtn:hover{background:rgba(255,255,255,.22);}
+.cdots{display:flex;gap:8px;}
+.cdot{width:8px;height:8px;border-radius:99px;background:rgba(255,255,255,.25);transition:all var(--t);cursor:pointer;}
+.cdot.on{background:var(--accent);width:24px;}
+#team{padding:112px 0;background:var(--ice);}
+.tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:56px;}
+.tmcard{background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:28px;text-align:center;transition:all var(--t);}
+.tmcard:hover{transform:translateY(-6px);box-shadow:var(--sh);}
+.tmav{width:80px;height:80px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#fff;}
+.tmname{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:4px;}
+.tmrole{font-size:13px;color:var(--bl);font-weight:600;margin-bottom:10px;}
+.tmbio{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px;}
+.tmsoc{display:flex;gap:8px;justify-content:center;}
+.tmsoc a{width:32px;height:32px;border-radius:8px;background:var(--ice);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;transition:all var(--t);}
+.tmsoc a:hover{background:var(--blue);border-color:var(--blue);}
+#blog{padding:112px 0;}
+.bhead{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:48px;gap:24px;flex-wrap:wrap;}
+.bgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+.bcard{border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;transition:all var(--t);cursor:pointer;}
+.bcard:hover{transform:translateY(-6px);box-shadow:var(--sh);}
+.bimg{height:200px;display:flex;align-items:center;justify-content:center;font-size:56px;position:relative;}
+.bcard:nth-child(1) .bimg{background:linear-gradient(135deg,#fff3e0,#ffd0a0);}
+.bcard:nth-child(2) .bimg{background:linear-gradient(135deg,#e8f5e9,#b8dfb8);}
+.bcard:nth-child(3) .bimg{background:linear-gradient(135deg,#e3f2fd,#bbdefb);}
+.bitag{position:absolute;top:14px;left:14px;background:rgba(27,43,75,.75);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;}
+.bbody{padding:24px;}
+.bmeta{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.bcat{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--bl);}
+.bdate{font-size:12px;color:var(--muted);}
+.btitle{font-family:var(--display);font-size:20px;color:var(--navy);line-height:1.3;margin-bottom:10px;}
+.bexc{font-size:14px;color:var(--muted);line-height:1.65;margin-bottom:16px;}
+.bauth{display:flex;align-items:center;gap:8px;padding-top:14px;border-top:1px solid var(--border);}
+.bav{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
+.ban{font-size:13px;font-weight:500;color:var(--navy);}
+#recipes{padding:112px 0;background:var(--ice);}
+.rhead{text-align:center;margin-bottom:48px;}
+.rsearch-bar{display:flex;gap:12px;max-width:640px;margin:0 auto 32px;flex-wrap:wrap;}
+.rsearch-bar input{flex:1;min-width:200px;padding:13px 18px;border:1.5px solid var(--border);border-radius:var(--r);font-size:15px;color:var(--navy);outline:none;transition:border-color var(--t),box-shadow var(--t);background:#fff;}
+.rsearch-bar input:focus{border-color:var(--bl);box-shadow:0 0 0 3px rgba(59,108,183,.12);}
+.rtags{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:40px;}
+.rtag{padding:6px 16px;border:1.5px solid var(--border);border-radius:99px;font-size:13px;font-weight:500;color:var(--muted);background:#fff;cursor:pointer;transition:all var(--t);}
+.rtag.on,.rtag:hover{background:var(--blue);color:#fff;border-color:var(--blue);}
+.rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+.rcard{background:#fff;border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;transition:all var(--t);}
+.rcard:hover{transform:translateY(-4px);box-shadow:var(--sh);}
+.rcard-img{height:160px;display:flex;align-items:center;justify-content:center;font-size:52px;position:relative;}
+.rcard-img span.rbadge{position:absolute;top:10px;right:10px;background:var(--blue);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;}
+.rcard-body{padding:20px;}
+.rcard-title{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:6px;}
+.rcard-chef{font-size:13px;color:var(--bl);font-weight:500;margin-bottom:8px;}
+.rcard-meta{display:flex;gap:14px;font-size:12px;color:var(--muted);}
+.rcard-meta span{display:flex;align-items:center;gap:4px;}
+.rcard-tags{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
+.rtchip{font-size:11px;padding:3px 9px;background:var(--sky);color:var(--blue);border-radius:99px;font-weight:500;}
+#noresults{display:none;text-align:center;padding:48px;color:var(--muted);font-size:16px;}
+#community{padding:112px 0;}
+.community-head{text-align:center;margin-bottom:48px;}
+.chef-filters{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:40px;}
+.chef-fb{padding:8px 20px;border:1.5px solid var(--border);border-radius:99px;font-size:14px;font-weight:500;color:var(--muted);background:#fff;transition:all var(--t);cursor:pointer;}
+.chef-fb.on,.chef-fb:hover{background:var(--blue);color:#fff;border-color:var(--blue);}
+.chef-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.chef-card{background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:24px;transition:all var(--t);position:relative;}
+.chef-card:hover{transform:translateY(-4px);box-shadow:var(--sh);}
+.chef-card-top{display:flex;gap:14px;align-items:flex-start;margin-bottom:16px;}
+.chef-avatar{width:56px;height:56px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;position:relative;}
+.chef-online{position:absolute;bottom:2px;right:2px;width:13px;height:13px;border-radius:50%;background:var(--green);border:2px solid #fff;}
+.chef-info{flex:1;min-width:0;}
+.chef-name{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:2px;}
+.chef-role{font-size:12px;color:var(--bl);font-weight:600;margin-bottom:4px;}
+.chef-location{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;}
+.chef-stats{display:flex;gap:16px;margin-bottom:14px;padding:10px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.chef-stat{text-align:center;flex:1;}
+.chef-stat-n{font-size:15px;font-weight:700;color:var(--navy);}
+.chef-stat-l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.chef-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:16px;}
+.chef-chip{font-size:11px;padding:3px 8px;background:var(--sky);color:var(--blue);border-radius:99px;font-weight:500;}
+.chef-actions{display:flex;gap:8px;}
+.chef-btn{flex:1;padding:9px 0;border-radius:var(--r);font-size:13px;font-weight:600;font-family:var(--body);cursor:pointer;transition:all var(--t);text-align:center;border:none;}
+.chef-btn.follow{background:var(--blue);color:#fff;}
+.chef-btn.follow:hover{background:var(--bl);}
+.chef-btn.follow.following{background:var(--sky);color:var(--blue);border:1.5px solid var(--border);}
+.chef-btn.follow.following:hover{background:#fde8e8;color:var(--red);border-color:var(--red);}
+.chef-btn.friend{background:var(--sky);color:var(--navy);border:1.5px solid var(--border);}
+.chef-btn.friend:hover{background:var(--green);color:#fff;border-color:var(--green);}
+.chef-btn.friend.pending{background:#fff8e1;color:#e67e22;border-color:#e67e22;cursor:default;}
+.chef-btn.friend.accepted{background:#e8f5e9;color:var(--green);border-color:var(--green);cursor:default;}
+.chef-btn.msg{background:var(--sky);color:var(--navy);border:1.5px solid var(--border);flex:0;width:40px;flex-shrink:0;}
+.chef-btn.msg:hover{background:var(--blue);color:#fff;border-color:var(--blue);}
+#friends-panel{display:none;position:fixed;top:70px;right:28px;z-index:4000;width:340px;background:#fff;border-radius:var(--rl);box-shadow:var(--sx);border:1px solid var(--border);overflow:hidden;max-height:calc(100vh - 100px);}
+#friends-panel.op{display:block;animation:paneldown .25s ease;}
+@keyframes paneldown{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:none;}}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);}
+.panel-title{font-size:15px;font-weight:700;color:var(--navy);}
+.panel-close{font-size:18px;color:var(--muted);cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;}
+.panel-close:hover{background:var(--sky);}
+.panel-tabs{display:flex;border-bottom:1px solid var(--border);}
+.panel-tab{flex:1;padding:10px;font-size:13px;font-weight:600;color:var(--muted);text-align:center;cursor:pointer;border-bottom:2px solid transparent;transition:all var(--t);}
+.panel-tab.on{color:var(--blue);border-color:var(--blue);}
+.panel-body{overflow-y:auto;max-height:420px;}
+.panel-section{padding:4px 0;}
+.friend-req{display:flex;align-items:center;gap:12px;padding:12px 16px;transition:background var(--t);}
+.friend-req:hover{background:var(--ice);}
+.freq-av{width:44px;height:44px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;}
+.freq-info{flex:1;min-width:0;}
+.freq-name{font-size:14px;font-weight:600;color:var(--navy);margin-bottom:2px;}
+.freq-meta{font-size:12px;color:var(--muted);}
+.freq-time{font-size:11px;color:var(--muted);white-space:nowrap;}
+.freq-btns{display:flex;gap:6px;margin-top:6px;}
+.freq-btn{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;font-family:var(--body);cursor:pointer;border:none;transition:all var(--t);}
+.freq-btn.accept{background:var(--green);color:#fff;}
+.freq-btn.accept:hover{background:#219a52;}
+.freq-btn.decline{background:var(--ice);color:var(--muted);border:1px solid var(--border);}
+.freq-btn.decline:hover{background:#fde8e8;color:var(--red);border-color:var(--red);}
+.freq-btn.withdraw{background:var(--ice);color:var(--muted);border:1px solid var(--border);font-size:11px;}
+.panel-empty{padding:32px;text-align:center;color:var(--muted);font-size:14px;}
+.panel-empty .pe-icon{font-size:32px;margin-bottom:8px;}
+.following-item{display:flex;align-items:center;gap:12px;padding:12px 16px;transition:background var(--t);}
+.following-item:hover{background:var(--ice);}
+.fi-av{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;position:relative;}
+.fi-dot{position:absolute;bottom:1px;right:1px;width:11px;height:11px;border-radius:50%;background:var(--green);border:2px solid #fff;}
+.fi-info{flex:1;min-width:0;}
+.fi-name{font-size:14px;font-weight:600;color:var(--navy);margin-bottom:1px;}
+.fi-role{font-size:12px;color:var(--muted);}
+.fi-unfollow{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;font-family:var(--body);cursor:pointer;border:1.5px solid var(--border);background:transparent;color:var(--muted);transition:all var(--t);}
+.fi-unfollow:hover{border-color:var(--red);color:var(--red);background:#fde8e8;}
+#chat-panel{display:none;position:fixed;bottom:100px;right:100px;z-index:9002;width:340px;background:#fff;border-radius:var(--rl);box-shadow:var(--sx);border:1px solid var(--border);overflow:hidden;flex-direction:column;}
+#chat-panel.op{display:flex;}
+.chat-head{background:linear-gradient(135deg,var(--navy),var(--blue));padding:14px 18px;display:flex;align-items:center;gap:10px;cursor:pointer;}
+.chat-head-av{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;position:relative;}
+.chat-online-dot{position:absolute;bottom:0;right:0;width:10px;height:10px;border-radius:50%;background:var(--green);border:2px solid var(--navy);}
+.chat-head-info{flex:1;}
+.chat-head-name{font-size:14px;font-weight:700;color:#fff;}
+.chat-head-status{font-size:11px;color:rgba(255,255,255,.7);}
+.chat-head-actions{display:flex;gap:4px;}
+.chat-hbtn{width:28px;height:28px;border-radius:6px;background:rgba(255,255,255,.15);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s;}
+.chat-hbtn:hover{background:rgba(255,255,255,.3);}
+.chat-body{flex:1;padding:16px;overflow-y:auto;max-height:320px;display:flex;flex-direction:column;gap:10px;background:#f8faff;}
+.chat-msg{max-width:80%;display:flex;flex-direction:column;gap:3px;}
+.chat-msg.them{align-self:flex-start;}
+.chat-msg.me{align-self:flex-end;}
+.chat-bubble{padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.5;}
+.chat-msg.them .chat-bubble{background:#fff;border:1px solid var(--border);color:var(--navy);border-bottom-left-radius:4px;}
+.chat-msg.me .chat-bubble{background:var(--blue);color:#fff;border-bottom-right-radius:4px;}
+.chat-time{font-size:11px;color:var(--muted);}
+.chat-msg.me .chat-time{text-align:right;}
+.chat-footer{padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;}
+.chat-input{flex:1;padding:9px 14px;border:1.5px solid var(--border);border-radius:99px;font-size:14px;color:var(--navy);outline:none;transition:border-color var(--t);}
+.chat-input:focus{border-color:var(--bl);}
+.chat-send{width:36px;height:36px;border-radius:50%;background:var(--blue);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .2s;border:none;}
+.chat-send:hover{background:var(--bl);}
+.chat-list-panel{display:none;position:fixed;bottom:100px;right:100px;z-index:9001;width:300px;background:#fff;border-radius:var(--rl);box-shadow:var(--sx);border:1px solid var(--border);overflow:hidden;}
+.chat-list-panel.op{display:block;animation:paneldown .25s ease;}
+.chat-list-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.chat-list-title{font-size:15px;font-weight:700;color:var(--navy);}
+.chat-list-body{overflow-y:auto;max-height:360px;}
+.conv-item{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;transition:background var(--t);}
+.conv-item:hover{background:var(--ice);}
+.conv-av{width:42px;height:42px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;position:relative;}
+.conv-dot{position:absolute;bottom:0;right:0;width:11px;height:11px;border-radius:50%;background:var(--green);border:2px solid #fff;}
+.conv-info{flex:1;min-width:0;}
+.conv-name{font-size:14px;font-weight:600;color:var(--navy);margin-bottom:2px;}
+.conv-preview{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.conv-meta{text-align:right;flex-shrink:0;}
+.conv-time{font-size:11px;color:var(--muted);}
+.conv-unread{width:18px;height:18px;border-radius:50%;background:var(--blue);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:3px;margin-left:auto;}
+#pricing{padding:112px 0;}
+.pricehead{text-align:center;margin-bottom:48px;}
+.btoggle{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:48px;}
+.btlbl{font-size:15px;font-weight:500;color:var(--muted);}
+.btlbl.on{color:var(--navy);font-weight:700;}
+.btpill{width:52px;height:28px;background:var(--blue);border-radius:99px;position:relative;cursor:pointer;flex-shrink:0;}
+.btknob{position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .25s;}
+.btpill.yr .btknob{transform:translateX(24px);}
+.sbadge{background:rgba(39,174,96,.12);color:var(--green);font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;border:1px solid rgba(39,174,96,.25);}
+.plangrid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+.plancard{background:#fff;border:1px solid var(--border);border-radius:var(--rx);padding:40px 32px;position:relative;transition:all var(--t);}
+.plancard:hover{transform:translateY(-6px);box-shadow:var(--sh);}
+.plancard.feat{border-color:var(--blue);box-shadow:0 4px 32px rgba(44,82,130,.2);}
+.pbadge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--blue);color:#fff;font-size:11px;font-weight:700;padding:5px 18px;border-radius:99px;white-space:nowrap;}
+.ptier{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--bl);margin-bottom:12px;}
+.prow{display:flex;align-items:flex-end;gap:4px;margin-bottom:4px;}
+.pcur{font-size:20px;font-weight:700;color:var(--navy);line-height:1;align-self:flex-start;padding-top:10px;}
+.pamt{font-family:var(--display);font-size:48px;color:var(--navy);line-height:1;}
+.pper{font-size:13px;color:var(--muted);margin-bottom:16px;}
+.pdesc{font-size:14px;color:var(--muted);line-height:1.65;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border);}
+.pfeats{display:flex;flex-direction:column;gap:10px;margin-bottom:28px;}
+.pf{font-size:14px;display:flex;align-items:flex-start;gap:9px;line-height:1.5;}
+.pf.y::before{content:'✓';color:var(--blue);font-weight:700;flex-shrink:0;}
+.pf.n{color:var(--muted);}
+.pf.n::before{content:'—';color:var(--border);flex-shrink:0;}
+.planbtn{width:100%;padding:14px;border-radius:10px;font-size:15px;font-weight:700;font-family:var(--body);cursor:pointer;transition:all .25s;display:block;text-align:center;}
+.planbtn.fill{background:var(--blue);color:#fff;border:none;}
+.planbtn.fill:hover{background:var(--bl);transform:translateY(-2px);box-shadow:0 6px 24px rgba(44,82,130,.3);}
+.planbtn.ghost{background:transparent;color:var(--blue);border:1.5px solid var(--blue);}
+.planbtn.ghost:hover{background:var(--blue);color:#fff;transform:translateY(-2px);}
+#faq{padding:96px 0;background:var(--ice);}
+.faq2{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start;}
+.faqlist{border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+.faqitem{border-bottom:1px solid var(--border);}
+.faqitem:last-child{border-bottom:none;}
+.faqq{width:100%;display:flex;align-items:center;justify-content:space-between;padding:22px 28px;font-size:15px;font-weight:600;color:var(--navy);background:#fff;text-align:left;cursor:pointer;transition:background var(--t);gap:16px;}
+.faqq:hover{background:var(--ice);}
+.faqa{font-size:18px;color:var(--bl);transition:transform .3s;flex-shrink:0;}
+.faqitem.op .faqa{transform:rotate(180deg);}
+.faqbody{max-height:0;overflow:hidden;transition:max-height .4s ease;background:#fff;}
+.faqitem.op .faqbody{max-height:300px;}
+.faqi{padding:0 28px 22px;font-size:15px;color:var(--muted);line-height:1.75;}
+#contact{padding:112px 0;}
+.cgrid{display:grid;grid-template-columns:1fr 1.4fr;gap:80px;align-items:start;}
+.cmethods{display:flex;flex-direction:column;gap:14px;margin-top:32px;}
+.cmrow{display:flex;align-items:center;gap:14px;padding:16px 20px;background:#fff;border:1px solid var(--border);border-radius:var(--rm);}
+.cmicon{width:42px;height:42px;flex-shrink:0;background:var(--sky);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.cmlbl{font-size:12px;color:var(--muted);margin-bottom:2px;}
+.cmval{font-size:14px;font-weight:600;color:var(--navy);}
+.cform{background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:44px 40px;box-shadow:var(--sc);}
+.ctitle{font-size:22px;font-weight:700;color:var(--navy);margin-bottom:28px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.fg{display:flex;flex-direction:column;gap:7px;margin-bottom:18px;}
+.fg label{font-size:13px;font-weight:600;color:var(--navy);}
+.fg input,.fg select,.fg textarea{padding:12px 16px;border:1.5px solid var(--border);border-radius:var(--r);font-size:15px;color:var(--navy);background:#fff;transition:border-color var(--t),box-shadow var(--t);outline:none;resize:vertical;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--bl);box-shadow:0 0 0 3px rgba(59,108,183,.12);}
+.fg textarea{min-height:120px;}
+.fsub{width:100%;padding:14px;background:var(--blue);color:#fff;border-radius:var(--r);font-size:16px;font-weight:600;font-family:var(--body);transition:all var(--t);display:flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;}
+.fsub:hover{background:var(--bl);transform:translateY(-2px);box-shadow:0 6px 24px rgba(44,82,130,.3);}
+.fsub:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+.fnote{font-size:12px;color:var(--muted);margin-top:12px;text-align:center;}
+.fmsg{display:none;text-align:center;padding:28px;}
+.fmsg .fmi{font-size:44px;margin-bottom:12px;}
+.fmsg h3{font-size:20px;font-weight:700;color:var(--navy);margin-bottom:8px;}
+.fmsg p{font-size:15px;color:var(--muted);}
+.site-footer{background:var(--navy);color:rgba(255,255,255,.7);padding:72px 0 0;}
+.fgrid{display:grid;grid-template-columns:1.8fr 1fr 1fr 1.2fr;gap:48px;padding-bottom:56px;border-bottom:1px solid rgba(255,255,255,.1);}
+.fbdesc{font-size:14px;line-height:1.7;margin:16px 0 24px;max-width:280px;}
+.slinks{display:flex;gap:10px;}
+.slink{width:38px;height:38px;border-radius:9px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:16px;transition:all var(--t);}
+.slink:hover{background:var(--blue);border-color:var(--blue);transform:translateY(-2px);}
+.fcol h4{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#fff;margin-bottom:20px;}
+.fcol ul{display:flex;flex-direction:column;gap:10px;}
+.fcol ul li a{font-size:14px;color:rgba(255,255,255,.6);transition:color var(--t);}
+.fcol ul li a:hover{color:#fff;}
+.fnl input{width:100%;padding:11px 14px;border:1.5px solid rgba(255,255,255,.15);border-radius:var(--r);background:rgba(255,255,255,.06);color:#fff;font-size:14px;font-family:var(--body);outline:none;margin-bottom:10px;transition:border-color var(--t);}
+.fnl input::placeholder{color:rgba(255,255,255,.35);}
+.fnl input:focus{border-color:rgba(255,255,255,.4);}
+.fnl button{width:100%;padding:11px;background:var(--bl);color:#fff;border-radius:var(--r);font-size:14px;font-weight:600;font-family:var(--body);transition:all var(--t);cursor:pointer;}
+.fnl button:hover{background:#4a7fc7;transform:translateY(-1px);}
+.fbot{display:flex;align-items:center;justify-content:space-between;padding:24px 0;font-size:13px;flex-wrap:wrap;gap:12px;}
+.fbotlinks{display:flex;gap:24px;}
+.fbotlinks a{font-size:13px;color:rgba(255,255,255,.5);transition:color var(--t);}
+.fbotlinks a:hover{color:#fff;}
+.chat-fab{position:fixed;bottom:28px;right:28px;z-index:9000;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--blue));box-shadow:0 4px 24px rgba(27,43,75,.4);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .25s;border:none;font-size:22px;}
+.chat-fab:hover{transform:scale(1.1) translateY(-2px);box-shadow:0 8px 36px rgba(27,43,75,.5);}
+.chat-fab-badge{position:absolute;top:-4px;right:-4px;width:20px;height:20px;background:var(--red);color:#fff;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;}
+#toast-container{position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{background:var(--navy);color:#fff;padding:12px 20px;border-radius:var(--rm);font-size:14px;font-weight:500;box-shadow:var(--sh);animation:toastin .3s ease,toastout .3s ease 2.7s both;pointer-events:none;display:flex;align-items:center;gap:8px;white-space:nowrap;}
+.toast.success{background:var(--green);}
+.toast.error{background:var(--red);}
+@keyframes toastin{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:none;}}
+@keyframes toastout{from{opacity:1;}to{opacity:0;}}
+#auth-modal{display:none;position:fixed;inset:0;background:rgba(10,20,40,.85);z-index:8000;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);}
+#auth-modal.op{display:flex;animation:lbf .25s ease;}
+.auth-card{background:#fff;border-radius:var(--rx);max-width:440px;width:100%;padding:44px 40px;position:relative;animation:lbu .3s ease;}
+.auth-title{font-family:var(--display);font-size:28px;color:var(--navy);margin-bottom:6px;}
+.auth-sub{font-size:15px;color:var(--muted);margin-bottom:28px;}
+.auth-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;background:var(--ice);color:var(--muted);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.auth-close:hover{background:var(--border);}
+.auth-tabs{display:flex;gap:0;margin-bottom:28px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.auth-tab{flex:1;padding:10px;font-size:14px;font-weight:600;color:var(--muted);text-align:center;cursor:pointer;transition:all var(--t);}
+.auth-tab.on{background:var(--blue);color:#fff;}
+.auth-fg{display:flex;flex-direction:column;gap:7px;margin-bottom:16px;}
+.auth-fg label{font-size:13px;font-weight:600;color:var(--navy);}
+.auth-fg input{padding:12px 16px;border:1.5px solid var(--border);border-radius:var(--r);font-size:15px;color:var(--navy);background:#fff;transition:border-color var(--t);outline:none;}
+.auth-fg input:focus{border-color:var(--bl);box-shadow:0 0 0 3px rgba(59,108,183,.12);}
+.auth-role-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px;}
+.auth-role{border:1.5px solid var(--border);border-radius:var(--rm);padding:12px 8px;text-align:center;cursor:pointer;transition:all var(--t);}
+.auth-role.on{border-color:var(--blue);background:var(--sky);}
+.auth-role-icon{font-size:22px;margin-bottom:4px;}
+.auth-role-lbl{font-size:12px;font-weight:600;color:var(--navy);}
+.auth-submit{width:100%;padding:14px;background:var(--blue);color:#fff;border-radius:var(--r);font-size:16px;font-weight:600;font-family:var(--body);border:none;cursor:pointer;transition:all var(--t);margin-top:4px;}
+.auth-submit:hover{background:var(--bl);}
+.auth-switch{text-align:center;font-size:14px;color:var(--muted);margin-top:16px;}
+.auth-switch a{color:var(--bl);font-weight:600;cursor:pointer;}
+@media(max-width:960px){.ag{grid-template-columns:1fr;gap:48px;}.aimg{order:-1;max-width:440px;margin:0 auto;}.sh{grid-template-columns:1fr;gap:16px;}.pgrid,.bgrid,.rgrid,.chef-grid{grid-template-columns:1fr 1fr;}.tgrid{grid-template-columns:1fr 1fr;}.plangrid{grid-template-columns:1fr;max-width:420px;margin:0 auto;}.faq2{grid-template-columns:1fr;gap:48px;}.cgrid{grid-template-columns:1fr;gap:48px;}.fgrid{grid-template-columns:1fr 1fr;}}
+@media(max-width:720px){.nlinks,.ncta,.nav-social-icons{display:none;}.ham{display:flex;}.sg{grid-template-columns:1fr;}.pgrid,.bgrid,.rgrid,.tgrid,.chef-grid{grid-template-columns:1fr;}.frow{grid-template-columns:1fr;}.fgrid{grid-template-columns:1fr;}.fbot{flex-direction:column;text-align:center;}.hstats{gap:24px;}.bhead{flex-direction:column;align-items:flex-start;}#friends-panel,#chat-panel,#chat-list-panel{right:12px;left:12px;width:auto;}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="wrap">
+    <div class="ni">
+      <a href="#hero" class="logo"><div class="logo-icon">🌍</div><div class="logo-text">global culinary<br><span>hub</span></div></a>
+      <div class="nlinks">
+        <a href="#about" class="nl">about</a>
+        <a href="#services" class="nl">services</a>
+        <a href="#community" class="nl">community</a>
+        <a href="#portfolio" class="nl">portfolio</a>
+        <a href="#recipes" class="nl">recipes</a>
+        <a href="#architecture" class="nl">tech</a>
+        <a href="#pricing" class="nl">pricing</a>
+        <a href="#contact" class="nl">contact</a>
+      </div>
+      <div class="nav-social-icons" id="nav-social-icons" style="display:none;">
+        <button class="nav-icon-btn" onclick="toggleFriendsPanel('requests')" title="Friend Requests">👥<span class="nav-badge hidden" id="req-badge">0</span></button>
+        <button class="nav-icon-btn" onclick="toggleChatList()" title="Messages">💬<span class="nav-badge hidden" id="msg-badge"></span></button>
+        <button class="nav-icon-btn" onclick="toggleFriendsPanel('following')" title="Following">❤️</button>
+      </div>
+      <div class="ncta">
+        <button class="nlogin" id="nav-login-btn" onclick="openAuth('login')">log in</button>
+        <button class="nup" id="nav-signup-btn" onclick="openAuth('signup')">join free →</button>
+        <button class="nlogin" id="nav-logout-btn" style="display:none;" onclick="logoutUser()">log out</button>
+      </div>
+      <button class="ham" id="ham"><span></span><span></span><span></span></button>
+    </div>
+    <div id="mm">
+      <a href="#about" onclick="cmm()">about</a>
+      <a href="#services" onclick="cmm()">services</a>
+      <a href="#community" onclick="cmm()">community</a>
+      <a href="#portfolio" onclick="cmm()">portfolio</a>
+      <a href="#recipes" onclick="cmm()">recipes</a>
+      <a href="#architecture" onclick="cmm()">tech</a>
+      <a href="#pricing" onclick="cmm()">pricing</a>
+      <a href="#contact" onclick="cmm()">contact</a>
+      <button class="btn bp" onclick="openAuth('signup');cmm()">join free →</button>
+    </div>
+  </div>
+</nav>
+
+<div id="friends-panel">
+  <div class="panel-head"><span class="panel-title">Friend Requests</span><button class="panel-close" onclick="closeFriendsPanel()">✕</button></div>
+  <div class="panel-tabs">
+    <div class="panel-tab on" id="tab-requests" onclick="switchFriendsTab('requests')">Requests</div>
+    <div class="panel-tab" id="tab-sent" onclick="switchFriendsTab('sent')">Sent</div>
+    <div class="panel-tab" id="tab-following" onclick="switchFriendsTab('following')">Following</div>
+  </div>
+  <div class="panel-body" id="friends-panel-body"></div>
+</div>
+
+<div class="chat-list-panel" id="chat-list-panel">
+  <div class="chat-list-head"><span class="chat-list-title">💬 Messages</span><button class="panel-close" onclick="closeChatList()">✕</button></div>
+  <div class="chat-list-body" id="chat-list-body"></div>
+</div>
+
+<div id="chat-panel">
+  <div class="chat-head" onclick="minimizeChat()">
+    <div class="chat-head-av" id="chat-av-icon">👨‍🍳<div class="chat-online-dot"></div></div>
+    <div class="chat-head-info"><div class="chat-head-name" id="chat-with-name">Chef</div><div class="chat-head-status">🟢 Online now</div></div>
+    <div class="chat-head-actions">
+      <button class="chat-hbtn" onclick="event.stopPropagation();minimizeChat()">–</button>
+      <button class="chat-hbtn" onclick="event.stopPropagation();closeChat()">✕</button>
+    </div>
+  </div>
+  <div class="chat-body" id="chat-body"></div>
+  <div class="chat-footer">
+    <input class="chat-input" id="chat-input" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendChatMsg()"/>
+    <button class="chat-send" onclick="sendChatMsg()">➤</button>
+  </div>
+</div>
+
+<div id="auth-modal" onclick="if(event.target===this)closeAuth()">
+  <div class="auth-card">
+    <button class="auth-close" onclick="closeAuth()">✕</button>
+    <div class="auth-title" id="auth-title">Welcome back 👋</div>
+    <div class="auth-sub" id="auth-sub">Log in to your culinary hub account</div>
+    <div class="auth-tabs">
+      <div class="auth-tab on" id="auth-tab-login" onclick="switchAuthTab('login')">Log In</div>
+      <div class="auth-tab" id="auth-tab-signup" onclick="switchAuthTab('signup')">Sign Up</div>
+    </div>
+    <div id="auth-login-form">
+      <div class="auth-fg"><label>Email address</label><input type="email" id="auth-email" placeholder="you@email.com"/></div>
+      <div class="auth-fg"><label>Password</label><input type="password" id="auth-password" placeholder="••••••••"/></div>
+      <button class="auth-submit" onclick="loginUser()">Log In →</button>
+      <div class="auth-switch">Don't have an account? <a onclick="switchAuthTab('signup')">Sign up free</a></div>
+    </div>
+    <div id="auth-signup-form" style="display:none;">
+      <div class="frow" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="auth-fg"><label>First name</label><input type="text" id="auth-fname" placeholder="Elena"/></div>
+        <div class="auth-fg"><label>Last name</label><input type="text" id="auth-lname" placeholder="Rossi"/></div>
+      </div>
+      <div class="auth-fg"><label>Email address</label><input type="email" id="auth-semail" placeholder="you@email.com"/></div>
+      <div class="auth-fg"><label>Password</label><input type="password" id="auth-spassword" placeholder="Choose a strong password"/></div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:10px;">I am a…</div>
+        <div class="auth-role-grid">
+          <div class="auth-role on" onclick="selectRole(this,'chef')"><div class="auth-role-icon">👨‍🍳</div><div class="auth-role-lbl">Chef</div></div>
+          <div class="auth-role" onclick="selectRole(this,'educator')"><div class="auth-role-icon">🎓</div><div class="auth-role-lbl">Educator</div></div>
+          <div class="auth-role" onclick="selectRole(this,'food-lover')"><div class="auth-role-icon">🍴</div><div class="auth-role-lbl">Food Lover</div></div>
+        </div>
+      </div>
+      <button class="auth-submit" onclick="signupUser()">Create Account →</button>
+      <div class="auth-switch">Already have an account? <a onclick="switchAuthTab('login')">Log in</a></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<section id="hero">
+  <div class="hbg"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div><div class="hgrid"></div></div>
+  <div class="wrap">
+    <div class="hc">
+      <div class="hbadge"><span class="hdot"></span>now live in 140+ countries</div>
+      <h1 class="htitle">the world's kitchens,<br><em>one destination.</em></h1>
+      <p class="hsub">global culinary hub connects chefs, culinary educators, and food lovers worldwide — turning centuries-old traditions into digital experiences that travel without a passport.</p>
+      <div class="hact">
+        <button class="btn bw" onclick="openAuth('signup')">start for free →</button>
+        <a href="#portfolio" class="btn bgw">explore our work</a>
+      </div>
+      <div class="hstats">
+        <div><div class="hsn">48<span>k+</span></div><div class="hsl">chefs &amp; creators</div></div>
+        <div><div class="hsn">140<span>+</span></div><div class="hsl">countries reached</div></div>
+        <div><div class="hsn">2.4<span>m</span></div><div class="hsl">recipes shared</div></div>
+        <div><div class="hsn">98<span>%</span></div><div class="hsl">client satisfaction</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="wrap">
+    <div class="ag">
+      <div class="rv">
+        <span class="lbl">who we are</span>
+        <h2 class="h2">a platform built by chefs, for a hungry world</h2>
+        <p class="sub" style="max-width:100%;margin-bottom:20px;">we started global culinary hub because the best food stories were still trapped in local kitchens — invisible to a world that desperately wanted to taste them.</p>
+        <p class="abody">today we serve culinary professionals across six continents, giving every chef, food educator, and culinary school the digital infrastructure to build a global audience, monetize their expertise, and preserve their heritage for generations.</p>
+        <div class="apills">
+          <div class="ap"><div class="api">🎯</div><div><div class="apl">our mission</div><div class="apd">make culinary knowledge borderless — discoverable, teachable, and profitable for every creator.</div></div></div>
+          <div class="ap"><div class="api">🌱</div><div><div class="apl">our values</div><div class="apd">authenticity over trends. community over competition. tradition alongside innovation.</div></div></div>
+          <div class="ap"><div class="api">🏆</div><div><div class="apl">our track record</div><div class="apd">helped 12,000+ chefs generate $40m+ in combined creator revenue since 2021.</div></div></div>
+        </div>
+        <a href="#services" class="btn bp">explore our services →</a>
+      </div>
+      <div class="aimg rv d2">
+        <div class="aframe">🍜</div>
+        <div class="afloat"><span style="font-size:28px">⭐</span><div><div class="afn">4.97</div><div class="afl">average rating · 48k+ chefs</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="services">
+  <div class="wrap">
+    <div class="sh">
+      <div class="rv"><span class="lbl">what we offer</span><h2 class="h2">everything a culinary professional needs to go global</h2></div>
+      <div class="rv d1"><p class="sub">four core pillars designed to take you from hidden gem to global destination — without the tech overwhelm.</p></div>
+    </div>
+    <div class="sg">
+      <div class="sc-card rv"><div class="sci">🎓</div><div class="sct">culinary education platform</div><p class="scd">launch structured courses, host live masterclasses, and award certificates — from a single dashboard built for culinary content, not corporate slide decks.</p><a href="#contact" class="scl">learn more <span>→</span></a></div>
+      <div class="sc-card rv d1"><div class="sci">🔍</div><div class="sct">global talent discovery</div><p class="scd">get found by restaurants, food brands, and culinary schools worldwide. our seo-optimised profiles surface the right talent to the right buyer.</p><a href="#contact" class="scl">learn more <span>→</span></a></div>
+      <div class="sc-card rv d2"><div class="sci">💳</div><div class="sct">multi-currency storefront</div><p class="scd">sell digital recipe books, courses, and consultation slots in 80+ currencies. zero commission. payouts in 2 business days, always.</p><a href="#contact" class="scl">learn more <span>→</span></a></div>
+      <div class="sc-card rv d3"><div class="sci">📚</div><div class="sct">heritage preservation studio</div><p class="scd">document regional recipes, upload cultural techniques, and publish multilingual guides that live permanently in the hub's open knowledge archive.</p><a href="#contact" class="scl">learn more <span>→</span></a></div>
+    </div>
+  </div>
+</section>
+
+<section id="community">
+  <div class="wrap">
+    <div class="community-head rv">
+      <span class="lbl">the community</span>
+      <h2 class="h2">connect with 48,000+ culinary minds</h2>
+      <p class="sub" style="margin:0 auto 28px;">follow chefs you admire, send friend requests to peers, and message anyone on the hub directly — real connections, no middleman.</p>
+    </div>
+    <div class="chef-filters rv d1">
+      <button class="chef-fb on" onclick="filterChefs('all',this)">all</button>
+      <button class="chef-fb" onclick="filterChefs('chef',this)">👨‍🍳 chefs</button>
+      <button class="chef-fb" onclick="filterChefs('educator',this)">🎓 educators</button>
+      <button class="chef-fb" onclick="filterChefs('food-lover',this)">🍴 food lovers</button>
+    </div>
+    <div class="chef-grid" id="chef-grid"></div>
+  </div>
+</section>
+
+<section id="portfolio">
+  <div class="wrap">
+    <div class="ph rv">
+      <span class="lbl">our work</span>
+      <h2 class="h2">culinary stories we've helped tell</h2>
+      <p class="sub" style="margin:0 auto;">from michelin-starred chefs to village grandmothers — every story deserves a global stage.</p>
+      <div class="pfilter">
+        <button class="pfb on" onclick="fport('all',this)">all</button>
+        <button class="pfb" onclick="fport('courses',this)">courses</button>
+        <button class="pfb" onclick="fport('brand',this)">branding</button>
+        <button class="pfb" onclick="fport('heritage',this)">heritage</button>
+      </div>
+    </div>
+    <div class="pgrid">
+      <div class="pc-card rv" data-cat="courses" onclick="openlb(0)"><div class="pimg">🍣</div><div class="pov"><div class="ptag">courses</div><div class="pname">tokyo knife mastery</div><div class="pmeta">hiroshi kato · 2,800 students enrolled</div></div></div>
+      <div class="pc-card rv d1" data-cat="heritage" onclick="openlb(1)"><div class="pimg">🫕</div><div class="pov"><div class="ptag">heritage</div><div class="pname">oaxacan mole archive</div><div class="pmeta">lucia morales · 14 regional recipes documented</div></div></div>
+      <div class="pc-card rv d2" data-cat="brand" onclick="openlb(2)"><div class="pimg">🥐</div><div class="pov"><div class="ptag">branding</div><div class="pname">maison dubois digital</div><div class="pmeta">paris pâtisserie · 50k+ followers gained</div></div></div>
+      <div class="pc-card rv" data-cat="courses" onclick="openlb(3)"><div class="pimg">🍛</div><div class="pov"><div class="ptag">courses</div><div class="pname">kerala spice journey</div><div class="pmeta">priya nair · $120k revenue in year one</div></div></div>
+      <div class="pc-card rv d1" data-cat="brand" onclick="openlb(4)"><div class="pimg">🥩</div><div class="pov"><div class="ptag">branding</div><div class="pname">gaucho fuego brand</div><div class="pmeta">buenos aires · 3 international pop-up deals</div></div></div>
+      <div class="pc-card rv d2" data-cat="heritage" onclick="openlb(5)"><div class="pimg">🍱</div><div class="pov"><div class="ptag">heritage</div><div class="pname">bento tradition project</div><div class="pmeta">osaka collective · 7 endangered recipes preserved</div></div></div>
+    </div>
+  </div>
+</section>
+
+<div id="lb" onclick="clbout(event)">
+  <div class="lbcard" id="lbcard">
+    <div class="lbimg" id="lbimg"><button class="lbclose" onclick="clb()">✕</button></div>
+    <div class="lbbody">
+      <div class="lbtag" id="lbtag"></div><div class="lbtitle" id="lbtitle"></div>
+      <div class="lbmeta" id="lbmeta"></div><div class="lbdesc" id="lbdesc"></div>
+      <div class="lbact"><a href="#contact" class="btn bp" onclick="clb()">work with us →</a><button class="btn bo" onclick="clb()">close</button></div>
+    </div>
+  </div>
+</div>
+
+<section id="testimonials">
+  <div class="wrap">
+    <div class="thead rv">
+      <span class="lbl">what they say</span>
+      <h2 class="h2">chefs from every corner of the globe</h2>
+      <p class="sub" style="margin:0 auto;">here's what 48,000+ culinary professionals say after joining the hub.</p>
+    </div>
+    <div class="cwrap rv">
+      <div class="ctrack" id="ctrack">
+        <div class="tslide"><div class="tinner"><div class="tstars">★★★★★</div><p class="tquote">"within 6 weeks i had 340 students from 22 countries in my ramen masterclass. my previous platform took 14 months to reach the same numbers."</p><div class="tauth"><div class="tav" style="background:linear-gradient(135deg,#2c5282,#3b6cb7)">hk</div><div><div class="tname">hiroshi kato</div><div class="trole">ramen master, tokyo</div></div></div></div></div>
+        <div class="tslide"><div class="tinner"><div class="tstars">★★★★★</div><p class="tquote">"i document ancient oaxacan techniques my grandmother taught me. people in berlin, seoul, and cairo are learning them. that's the legacy i wanted to build."</p><div class="tauth"><div class="tav" style="background:linear-gradient(135deg,#1b6ca8,#2e86c1)">lm</div><div><div class="tname">lucia morales</div><div class="trole">heritage chef &amp; educator, mexico</div></div></div></div></div>
+        <div class="tslide"><div class="tinner"><div class="tstars">★★★★★</div><p class="tquote">"we source guest chefs for monthly pop-ups entirely through the hub. found a keralan spice specialist, a lebanese bread artisan, and a peruvian ceviche master — all in one afternoon."</p><div class="tauth"><div class="tav" style="background:linear-gradient(135deg,#154360,#1a5276)">jd</div><div><div class="tname">james devereaux</div><div class="trole">f&amp;b director, the atelier group</div></div></div></div></div>
+        <div class="tslide"><div class="tinner"><div class="tstars">★★★★★</div><p class="tquote">"zero commission is not marketing speak — it's real. i generated $84,000 in course revenue last year and kept every cent of it. no other platform comes close."</p><div class="tauth"><div class="tav" style="background:linear-gradient(135deg,#1a5276,#1f618d)">ag</div><div><div class="tname">andré gomes</div><div class="trole">pastry chef &amp; course creator, são paulo</div></div></div></div></div>
+        <div class="tslide"><div class="tinner"><div class="tstars">★★★★★</div><p class="tquote">"the multi-currency storefront changed everything. i used to lose 18% to conversion fees. now checkout conversion is up 40% with local currency pricing."</p><div class="tauth"><div class="tav" style="background:linear-gradient(135deg,#21618c,#2874a6)">pn</div><div><div class="tname">priya nair</div><div class="trole">spice educator, kerala</div></div></div></div></div>
+      </div>
+      <div class="cctrl"><button class="cbtn" id="cprev">‹</button><div class="cdots" id="cdots"></div><button class="cbtn" id="cnext">›</button></div>
+    </div>
+  </div>
+</section>
+
+<section id="team" style="background:var(--ice);padding:112px 0;">
+  <div class="wrap">
+    <div style="text-align:center" class="rv">
+      <span class="lbl">the team</span>
+      <h2 class="h2">chefs, technologists &amp; storytellers</h2>
+      <p class="sub" style="margin:0 auto;">we built the platform we wished existed when we started cooking professionally.</p>
+    </div>
+    <div class="tgrid">
+      <div class="tmcard rv"><div class="tmav" style="background:linear-gradient(135deg,#2c5282,#3b6cb7)">ao</div><div class="tmname">amara osei</div><div class="tmrole">ceo &amp; co-founder</div><div class="tmbio">former head chef at noma. built the first west african culinary archive at age 27.</div><div class="tmsoc"><a href="#">💼</a><a href="#">🐦</a></div></div>
+      <div class="tmcard rv d1"><div class="tmav" style="background:linear-gradient(135deg,#1b6ca8,#2e86c1)">ml</div><div class="tmname">maya lim</div><div class="tmrole">cto &amp; co-founder</div><div class="tmbio">ex-stripe engineer. obsessed with making payments invisible for creators worldwide.</div><div class="tmsoc"><a href="#">💼</a><a href="#">🐦</a></div></div>
+      <div class="tmcard rv d2"><div class="tmav" style="background:linear-gradient(135deg,#154360,#1a5276)">rv</div><div class="tmname">rafael vargas</div><div class="tmrole">head of community</div><div class="tmbio">culinary anthropologist. documented 3,000+ endangered recipes across latin america.</div><div class="tmsoc"><a href="#">💼</a><a href="#">📸</a></div></div>
+      <div class="tmcard rv d3"><div class="tmav" style="background:linear-gradient(135deg,#1f618d,#2e86c1)">sk</div><div class="tmname">soo-jin kim</div><div class="tmrole">head of design</div><div class="tmbio">award-winning ux designer. believes great food and great interfaces share the same dna.</div><div class="tmsoc"><a href="#">💼</a><a href="#">🎨</a></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="blog">
+  <div class="wrap">
+    <div class="bhead">
+      <div class="rv"><span class="lbl">from the kitchen desk</span><h2 class="h2" style="margin-bottom:0">latest stories &amp; insights</h2></div>
+      <a href="#" class="btn bo rv d1">view all posts →</a>
+    </div>
+    <div class="bgrid">
+      <div class="bcard rv"><div class="bimg">🍝<div class="bitag">trending</div></div><div class="bbody"><div class="bmeta"><span class="bcat">education</span><span class="bdate">jun 18, 2026</span></div><div class="btitle">how to price your online cooking course for global students</div><div class="bexc">currency psychology, purchasing power parity, and the one pricing mistake 80% of creators make in their first year.</div><div class="bauth"><div class="bav" style="background:linear-gradient(135deg,#2c5282,#3b6cb7)">ao</div><span class="ban">amara osei</span></div></div></div>
+      <div class="bcard rv d1"><div class="bimg">🌿<div class="bitag">heritage</div></div><div class="bbody"><div class="bmeta"><span class="bcat">heritage</span><span class="bdate">jun 10, 2026</span></div><div class="btitle">the race to preserve 400 disappearing fermentation techniques</div><div class="bexc">from ethiopian tej to mongolian airag — the hub's archivists are in a race against time to save ancient methods.</div><div class="bauth"><div class="bav" style="background:linear-gradient(135deg,#154360,#1a5276)">rv</div><span class="ban">rafael vargas</span></div></div></div>
+      <div class="bcard rv d2"><div class="bimg">💰<div class="bitag">business</div></div><div class="bbody"><div class="bmeta"><span class="bcat">business</span><span class="bdate">jun 3, 2026</span></div><div class="btitle">from ₦0 to ₦4.8m: a nigerian chef's first year on the hub</div><div class="bexc">chef emeka nwosu went from street food vendor to international online educator with 6,200 students. here's exactly how.</div><div class="bauth"><div class="bav" style="background:linear-gradient(135deg,#1f618d,#2e86c1)">sk</div><span class="ban">soo-jin kim</span></div></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="recipes">
+  <div class="wrap">
+    <div class="rhead rv">
+      <span class="lbl">recipe browser</span>
+      <h2 class="h2">2.4 million recipes. one search.</h2>
+      <p class="sub" style="margin:0 auto 28px">discover dishes from every culture, filtered by cuisine, difficulty, and chef — with ai-powered suggestions based on what you love.</p>
+    </div>
+    <div class="rsearch-bar rv">
+      <input type="text" id="rsearch" placeholder="search recipes, chefs, ingredients…" oninput="filterrecipes()"/>
+      <button class="btn bp" onclick="filterrecipes()">search</button>
+    </div>
+    <div class="rtags rv d1">
+      <button class="rtag on" onclick="settag('all',this)">all cuisines</button>
+      <button class="rtag" onclick="settag('japanese',this)">🇯🇵 japanese</button>
+      <button class="rtag" onclick="settag('indian',this)">🇮🇳 indian</button>
+      <button class="rtag" onclick="settag('mexican',this)">🇲🇽 mexican</button>
+      <button class="rtag" onclick="settag('french',this)">🇫🇷 french</button>
+      <button class="rtag" onclick="settag('nigerian',this)">🇳🇬 nigerian</button>
+      <button class="rtag" onclick="settag('chinese',this)">🇨🇳 chinese</button>
+      <button class="rtag" onclick="settag('italian',this)">🇮🇹 italian</button>
+    </div>
+    <div class="rgrid" id="rgrid"></div>
+    <div id="noresults">no recipes found. try a different search or tag.</div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <div class="pricehead rv">
+      <span class="lbl">pricing</span>
+      <h2 class="h2">simple plans. zero commission. always.</h2>
+      <p class="sub" style="margin:0 auto 28px">no surprises. no percentage cuts. just a flat monthly fee so every naira you earn stays yours.</p>
+    </div>
+    <div class="btoggle rv">
+      <span class="btlbl on" id="lblmo">monthly</span>
+      <div class="btpill" id="btpill" onclick="togbill()"><div class="btknob"></div></div>
+      <span class="btlbl" id="lblyr">annual</span>
+      <span class="sbadge">save 30%</span>
+    </div>
+    <div class="plangrid">
+      <div class="plancard rv">
+        <div class="ptier">starter</div>
+        <div class="prow"><span class="pcur">₦</span><span class="pamt pv" data-mo="0" data-yr="0">0</span></div>
+        <div class="pper">forever free</div>
+        <p class="pdesc">for chefs beginning their digital journey. no credit card needed.</p>
+        <div class="pfeats">
+          <div class="pf y">chef profile &amp; portfolio</div><div class="pf y">1 published course</div>
+          <div class="pf y">up to 50 students</div><div class="pf y">50 archive recipes</div>
+          <div class="pf y">basic analytics</div><div class="pf y">community connections &amp; messaging</div>
+          <div class="pf n">live class hosting</div><div class="pf n">multi-currency storefront</div><div class="pf n">verified certificates</div>
+        </div>
+        <button class="planbtn ghost" onclick="openAuth('signup')">get started free</button>
+      </div>
+      <div class="plancard feat rv d1">
+        <div class="pbadge">⭐ most popular</div>
+        <div class="ptier">pro chef</div>
+        <div class="prow"><span class="pcur">₦</span><span class="pamt pv" data-mo="9900" data-yr="6930">9,900</span></div>
+        <div class="pper" id="pp-pro">per month · billed monthly</div>
+        <p class="pdesc">for serious educators ready to build a global student base with zero commission.</p>
+        <div class="pfeats">
+          <div class="pf y">everything in starter</div><div class="pf y">unlimited courses &amp; recipes</div>
+          <div class="pf y">live masterclass (100 seats)</div><div class="pf y">full storefront (80+ currencies)</div>
+          <div class="pf y">verified certificates</div><div class="pf y">full analytics dashboard</div>
+          <div class="pf y">40-language subtitles</div><div class="pf n">white-label school subdomain</div>
+        </div>
+        <button class="planbtn fill" onclick="openAuth('signup')">upgrade to pro →</button>
+      </div>
+      <div class="plancard rv d2">
+        <div class="ptier">culinary school</div>
+        <div class="prow"><span class="pcur">₦</span><span class="pamt pv" data-mo="29900" data-yr="20930">29,900</span></div>
+        <div class="pper" id="pp-school">per month · billed monthly</div>
+        <p class="pdesc">full infrastructure for schools, food brands, and high-volume educators.</p>
+        <div class="pfeats">
+          <div class="pf y">everything in pro</div><div class="pf y">white-label school subdomain</div>
+          <div class="pf y">500-seat live classes</div><div class="pf y">unlimited archive projects</div>
+          <div class="pf y">priority discovery placement</div><div class="pf y">dedicated account manager</div>
+          <div class="pf y">api access &amp; integrations</div>
+        </div>
+        <button class="planbtn ghost" onclick="openAuth('signup')">upgrade to school</button>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:13px;color:var(--muted);margin-top:28px;">🔒 secured by paystack · ssl encrypted · cancel any time · zero commission — ever</p>
+  </div>
+</section>
+
+<section id="faq" style="background:var(--ice);padding:96px 0;">
+  <div class="wrap">
+    <div class="faq2">
+      <div class="rv">
+        <span class="lbl">faq</span>
+        <h2 class="h2">questions we get all the time</h2>
+        <p class="sub">can't find your answer? email us at midels.culinaryhub@gmail.com — we reply in under 2 hours on weekdays.</p>
+        <a href="#contact" class="btn bp" style="margin-top:32px">ask us directly →</a>
+      </div>
+      <div class="rv d1">
+        <div class="faqlist">
+          <div class="faqitem"><button class="faqq" onclick="togfaq(this)">is there really zero commission on sales?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">yes — completely. we charge a flat monthly subscription and take 0% commission on courses, recipe books, or consultation bookings. every naira you earn is yours.</div></div></div>
+          <div class="faqitem"><button class="faqq" onclick="togfaq(this)">how does paystack handle my payment?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">paystack is nigeria's most trusted payment processor. your card details are encrypted and never stored on our servers. all nigerian and major international cards are supported.</div></div></div>
+          <div class="faqitem"><button class="faqq" onclick="togfaq(this)">can i cancel or switch plans any time?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">yes. cancel from your dashboard with no fees. you keep access until the end of your billing period. upgrades take effect immediately; downgrades at the next billing date.</div></div></div>
+          <div class="faqitem"><button class="faqq" onclick="togfaq(this)">what languages does the platform support?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">the dashboard is available in 12 languages. our subtitle engine auto-translates video content into 40 languages on pro and school plans.</div></div></div>
+          <div class="faqitem"><button class="faqq" onclick="togfaq(this)">how quickly do i get paid?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">payouts are processed within 2 business days of a sale on pro and school plans. starter plan payouts are weekly. all funds land directly in your linked bank account.</div></div></div>
+          <div class="faqitem"><button class="faqq" onclick="togfaq(this)">how do i connect with other chefs on the hub?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">visit the community section to follow chefs, send friend requests, and message anyone directly. all plans include community features. your connections feed, friend requests, and messages are accessible from the icons in the top navigation bar after signing in.</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="wrap">
+    <div class="cgrid">
+      <div class="rv">
+        <span class="lbl">get in touch</span>
+        <h2 class="h2">let's bring your culinary vision online</h2>
+        <p class="sub" style="max-width:100%">whether you're a solo chef or a culinary school with 500 students, we'll find the right plan and set you up in under 24 hours.</p>
+        <div class="cmethods">
+          <div class="cmrow"><div class="cmicon">📧</div><div><div class="cmlbl">email us</div><div class="cmval">midels.culinaryhub@gmail.com</div></div></div>
+          <div class="cmrow"><div class="cmicon">📞</div><div><div class="cmlbl">call us</div><div class="cmval">09067306804</div></div></div>
+          <div class="cmrow"><div class="cmicon">💬</div><div><div class="cmlbl">direct message</div><div class="cmval">sign in and message us from the community</div></div></div>
+          <div class="cmrow"><div class="cmicon">⏱</div><div><div class="cmlbl">response time</div><div class="cmval">under 2 hours on weekdays</div></div></div>
+        </div>
+      </div>
+      <div class="rv d1">
+        <div class="cform">
+          <div class="ctitle">send us a message</div>
+          <form id="cformel" onsubmit="sendform(event)">
+            <div class="frow">
+              <div class="fg"><label>first name *</label><input id="fn" type="text" placeholder="elena" required/></div>
+              <div class="fg"><label>last name</label><input id="ln" type="text" placeholder="rossi"/></div>
+            </div>
+            <div class="fg"><label>email address *</label><input id="em" type="email" placeholder="elena@myrestaurant.com" required/></div>
+            <div class="fg"><label>i'm interested in</label>
+              <select id="tp">
+                <option value="">select a topic…</option>
+                <option>culinary education platform</option>
+                <option>global talent discovery</option>
+                <option>multi-currency storefront</option>
+                <option>heritage preservation studio</option>
+                <option>partnership or press</option>
+                <option>something else</option>
+              </select>
+            </div>
+            <div class="fg"><label>your message *</label><textarea id="msg" placeholder="tell us a bit about what you're building…" required></textarea></div>
+            <button type="submit" class="fsub" id="fsub">send message →</button>
+            <p class="fnote">🔒 your information is never shared with third parties.</p>
+          </form>
+          <div class="fmsg" id="fsuccess"><div class="fmi">✅</div><h3>message received!</h3><p>we'll be in touch within 2 hours. something good is coming.</p></div>
+          <div class="fmsg" id="ferror"><div class="fmi">⚠️</div><h3>something went wrong</h3><p>please email us directly at midels.culinaryhub@gmail.com</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ████ architecture ████ -->
+<section id="architecture" style="padding:112px 0;background:#fff;">
+  <div class="wrap">
+    <div style="text-align:center;margin-bottom:64px;" class="rv">
+      <span class="lbl">platform technology</span>
+      <h2 class="h2">how the hub is built — every layer, explained</h2>
+      <p class="sub" style="margin:0 auto;">global culinary hub is engineered across 15 layers of modern technology, ensuring speed, security, and scale for 48,000+ chefs in 140+ countries.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;" id="arch-grid">
+      <div class="sc-card rv" style="padding:28px;"><div class="sci" style="font-size:22px;">🖥️</div><div class="sct" style="font-size:16px;">1. Frontend (Client Side)</div><p class="scd" style="font-size:13px;margin-bottom:14px;">Everything users see and interact with.</p><ul style="font-size:13px;color:var(--muted);line-height:2;padding-left:4px;list-style:none;"><li>✦ User Interface (UI) &amp; Experience (UX)</li><li>✦ Animations &amp; Navigation</li><li>✦ Forms, Buttons, Images &amp; Videos</li><li>✦ Dark / Light Mode</li><li>✦ Responsive Design</li></ul></div>
+      <div class="sc-card rv d1" style="padding:28px;"><div class="sci" style="font-size:22px;">⚙️</div><div class="sct" style="font-size:16px;">2. Backend (Server Side)</div><p class="scd" style="font-size:13px;margin-bottom:14px;">Business logic that powers the platform behind the scenes.</p><ul style="font-size:13px;color:var(--muted);line-height:2;padding-left:4px;list-style:none;"><li>✦ Authentication &amp; User Management</li><li>✦ APIs &amp; Business Rules</li><li>✦ Payment Processing</li><li>✦ Notifications &amp; File Uploads</li><li>✦ Data Processing</li></ul></div>
+      <div class="sc-card rv d2" style="padding:28px;"><div class="sci" style="font-size:22px;">🗄️</div><div class="sct" style="font-size:16px;">3. Database</div><p class="scd" style="font-size:13px;margin-bottom:14px;">Where every piece of information is stored securely.</p><ul style="font-size:13px;color:var(--muted);line-height:2;padding-left:4px;list-style:none;"><li>✦ User Accounts &amp; Encrypted Passwords</li><li>✦ Messages, Orders &amp; Payments</li><li>✦ Images, Recipes &amp; Settings</li><li>✦ PostgreSQL · MySQL · MongoDB</li><li>✦ Firebase Firestore</li></ul></div>
+      <div class="sc-card rv" style="padding:28px;"><div class="sci" style="font-size:22px;">🔌</div><div class="sct" style="font-size:16px;">4. API Layer</div><p class="scd" style="font-size:13px;margin-bottom:14px;">The communication bridge between frontend and backend.</p><ul style="font-size:13px;color:var(--muted);line-height:2;padding-left:4px;list-style:none;"><li>✦ Login API</li><li>✦ Payment API</li><li>✦ Chat API</li><li>✦ Search API</li><li>✦ Weather &amp; Third-Party APIs</li></ul></div>
+      <div class="sc-card rv d1" style="padding:28px;"><div class="sci" style="font-size:22px;">🔐</div><div class="sct" style="font-size:16px;">5. Authentication &amp; Authorisation</div><p class="scd" style="font-size:13px;margin-bottom:14px;">Controls who accesses the app and what they can do.</p><ul style="font-size:13px;color:var(--muted);line-height:2;padding-left:4px;list-style:none;"><li>✦ Email / Password Login</li><li>✦ Google Sign-In</li><li>✦ Face ID &amp; Fingerprint</li><li>✦ Two-Factor Authentication (2FA)</li><li>✦ Role-Based Access Control</li></ul></div>
+      <div class="sc-card rv d2" style="padding:28px;"><div class="sci" style="font-size:22px;">☁️</div><div class="sct" style="font-size:16px;">6. Cloud Infrastructure</div><p class="scd" style="font-size:13px;margin-bottom:14px;">Where the hub lives and scales globally.</p><ul style="font-size:13px;color:var(--muted);line-height:2;padding-left:4px;list-style:none;"><li>✦ Servers &amp; Storage</li><li>✦ Networking &amp; Load Balancing</li><li>✦ Automatic Scaling</li><li>✦ Backups &amp; Disaster Recovery</li><li>✦ Global CDN Delivery</li></ul></div>
+      <div class="sc-card rv" style="padding:28px;"><div class="sci" style="font-size:22px;">🚀</div><div class="sct" style="font-size:16px;">7. DevOps</div><p class="scd" style="font-size:13px;margin-bottom:14px;">Keeps the platform running smoothly around the clock.</p><ul style="font-size:13px;color:var(--muted);line-height:2;padding-left:4px;list-style:none;"><li>✦ Deployment &amp; CI/CD Pipelines</li><li>✦ Monitoring &amp; Logging</li><li>✦ Automatic Updates &amp; Rollbacks</li><li>✦ Backups</li><li>✦ Uptime Guarantees</li></ul></div>
+      <div class="sc-card rv d1" style="padding:28px;"><div class="sci" style="font-size:22px;">🛡️</div><div class="sct" style="font-size:16px;">8. Security Layer</div><p class="scd" style="font-size:13px;margin-bottom:14px;">Protects the platform and every creator's data.</p><ul style="font-size:13px;color:var(--muted);line-height:2;padding-left:4px;list-style:none;"><li>✦ Encryption &amp; SSL/TLS</li><li>✦ Firewalls &amp; Rate Limiting</li><li>✦ Fraud Detection</li><li>✦ Data Privacy Compliance</li><li>✦ Secure API Keys</li></ul></div>
+      <div class="sc-card rv d2" style="padding:28px;"><div class="sci" style="font-size:22px;">💳</div><div class="sct" style="font-size:16px;">9. Payment System</div><p class="scd" style="font-size:13px;margin-bottom:14px;">Handles every financial transaction on the hub.</p><ul style="font-size:13px;color:var(--muted);line-height:2;padding-left:4px;list-style:none;"><li>✦ Card Payments &amp; Bank Transfers</li><li>✦ 80+ Currency Wallets</li><li>✦ Subscriptions &amp; Refunds</li><li>✦ Paystack Integration</li><li>✦ 2-Business-Day Payouts</li></ul></div>
+      <div class="sc-card rv" style="padding:28px;"><div class="sci" style="font-size:22px;">📊</div><div class="sct" style="font-size:16px;">10. Analytics</div><p class="scd" style="font-size:13px;margin-bottom:14px;">Tracks how users and revenue move across the platform.</p><ul style="font-size:13px;color:var(--muted);line-height:2;padding-left:4px;list-style:none;"><li>✦ Active Users &amp; Screen Views</li><li>✦ User Retention &amp; Sales</li><li>✦ Conversion Rates &amp; Crash Reports</li><li>✦ Creator Revenue Dashboards</li><li>✦ Real-Time Insights</li></ul></div>
+      <div class="sc-card rv d1" style="padding:28px;"><div class="sci" style="font-size:22px;">🔔</div><div class="sct" style="font-size:16px;">11. Notifications</div><p class="scd" style="font-size:13px;margin-bottom:14px;">Keeps chefs and students informed in real time.</p><ul style="font-size:13px;color:var(--muted);line-height:2;padding-left:4px;list-style:none;"><li>✦ Push Notifications</li><li>✦ Email Notifications</li><li>✦ SMS Alerts</li><li>✦ In-App Messages</li><li>✦ Friend &amp; Course Updates</li></ul></div>
+      <div class="sc-card rv d2" style="padding:28px;"><div class="sci" style="font-size:22px;">🖱️</div><div class="sct" style="font-size:16px;">12. Admin Panel</div><p class="scd" style="font-size:13px;margin-bottom:14px;">A dedicated dashboard for platform administrators.</p><ul style="font-size:13px;color:var(--muted);line-height:2;padding-left:4px;list-style:none;"><li>✦ Manage Users &amp; Payments</li><li>✦ View Reports &amp; Analytics</li><li>✦ Moderate Content</li><li>✦ Send Announcements</li><li>✦ Configure Platform Settings</li></ul></div>
+      <div class="sc-card rv" style="padding:28px;"><div class="sci" style="font-size:22px;">🤖</div><div class="sct" style="font-size:16px;">13. AI Layer</div><p class="scd" style="font-size:13px;margin-bottom:14px;">Adds intelligent features across the entire platform.</p><ul style="font-size:13px;color:var(--muted);line-height:2;padding-left:4px;list-style:none;"><li>✦ AI-Powered Recipe Suggestions</li><li>✦ Image Recognition</li><li>✦ Chatbots &amp; Voice Assistants</li><li>✦ Fraud Detection</li><li>✦ Predictive Analytics</li></ul></div>
+      <div class="sc-card rv d1" style="padding:28px;"><div class="sci" style="font-size:22px;">🔗</div><div class="sct" style="font-size:16px;">14. Third-Party Integrations</div><p class="scd" style="font-size:13px;margin-bottom:14px;">Connects the hub to the world's leading services.</p><ul style="font-size:13px;color:var(--muted);line-height:2;padding-left:4px;list-style:none;"><li>✦ Payment Gateways &amp; Maps</li><li>✦ Social Login Providers</li><li>✦ Email &amp; SMS Services</li><li>✦ Cloud Storage</li><li>✦ Analytics &amp; Marketing Tools</li></ul></div>
+      <div class="sc-card rv d2" style="padding:28px;"><div class="sci" style="font-size:22px;">🧪</div><div class="sct" style="font-size:16px;">15. Testing &amp; Quality Assurance</div><p class="scd" style="font-size:13px;margin-bottom:14px;">Ensures every feature works flawlessly before release.</p><ul style="font-size:13px;color:var(--muted);line-height:2;padding-left:4px;list-style:none;"><li>✦ Unit &amp; Integration Testing</li><li>✦ UI &amp; Performance Testing</li><li>✦ Security Testing</li><li>✦ User Acceptance Testing</li><li>✦ Automated CI/CD Test Suites</li></ul></div>
+    </div>
+    <div style="margin-top:56px;background:linear-gradient(135deg,var(--navy),var(--blue));border-radius:var(--rl);padding:36px 40px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;" class="rv">
+      <div style="flex:1;min-width:240px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;">complete app architecture</div>
+        <div style="font-family:var(--display);font-size:clamp(20px,3vw,28px);color:#fff;line-height:1.3;margin-bottom:8px;">Users → Frontend → API → Backend → Database</div>
+        <div style="font-size:14px;color:rgba(255,255,255,.65);line-height:1.7;">Every request flows through 15 layers of technology — secured, scaled, and optimised for chefs in 140+ countries.</div>
+      </div>
+      <a href="#contact" class="btn bw" style="flex-shrink:0;">build with us →</a>
+    </div>
+  </div>
+</section>
+<style>
+@media(max-width:960px){#arch-grid{grid-template-columns:1fr 1fr!important;}}
+@media(max-width:720px){#arch-grid{grid-template-columns:1fr!important;}}
+</style>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="fgrid">
+      <div>
+        <a href="#hero" class="logo"><div class="logo-icon">🌍</div><div class="logo-text" style="color:#fff">global culinary<br><span>hub</span></div></a>
+        <p class="fbdesc">the platform where culinary traditions go global. connecting chefs, educators, and food lovers across 140+ countries.</p>
+        <div class="slinks"><a href="#" class="slink">📸</a><a href="#" class="slink">🎵</a><a href="#" class="slink">▶</a><a href="#" class="slink">💼</a><a href="#" class="slink">👤</a></div>
+      </div>
+      <div class="fcol"><h4>platform</h4><ul>
+        <li><a href="#services">education tools</a></li><li><a href="#services">talent discovery</a></li>
+        <li><a href="#services">storefront</a></li><li><a href="#services">heritage archive</a></li>
+        <li><a href="#recipes">recipe browser</a></li><li><a href="#architecture">tech architecture</a></li><li><a href="#pricing">pricing</a></li>
+      </ul></div>
+      <div class="fcol"><h4>company</h4><ul>
+        <li><a href="#about">about us</a></li><li><a href="#blog">blog</a></li>
+        <li><a href="#team">team</a></li><li><a href="#">careers</a></li>
+        <li><a href="#">press kit</a></li><li><a href="#contact">contact</a></li>
+      </ul></div>
+      <div class="fcol"><h4>stay in the loop</h4>
+        <p style="font-size:13px;line-height:1.6;margin-bottom:16px;">monthly digest of new recipes, chefs to follow, and platform updates.</p>
+        <div class="fnl"><input type="email" id="nlemail" placeholder="your@email.com"/><button onclick="subnl()">subscribe →</button></div>
+      </div>
+    </div>
+    <div class="fbot">
+      <span>© 2026 global culinary hub. all rights reserved. · <a href="mailto:midels.culinaryhub@gmail.com" style="color:rgba(255,255,255,.5)">midels.culinaryhub@gmail.com</a></span>
+      <div class="fbotlinks"><a href="#">privacy policy</a><a href="#">terms of service</a><a href="#">cookie settings</a></div>
+    </div>
+  </div>
+</footer>
+
+<button class="chat-fab" onclick="toggleChatList()" aria-label="open messages">
+  💬<span class="chat-fab-badge" id="fab-badge"></span>
+</button>
+
+<script>
+/* UI UTILITIES — carousel, lightbox, FAQ, recipe browser, pricing,
+   nav scroll, auth modal switching, contact form, scroll reveal.
+   Auth/chat/community backend logic lives in app.js (Supabase). */
+
+function openAuth(tab){switchAuthTab(tab);document.getElementById('auth-modal').classList.add('op');}
+function closeAuth(){document.getElementById('auth-modal').classList.remove('op');}
+function switchAuthTab(tab){
+  const l=tab==='login';
+  document.getElementById('auth-tab-login').classList.toggle('on',l);
+  document.getElementById('auth-tab-signup').classList.toggle('on',!l);
+  document.getElementById('auth-login-form').style.display=l?'':'none';
+  document.getElementById('auth-signup-form').style.display=l?'none':'';
+  document.getElementById('auth-title').textContent=l?'Welcome back 👋':'Join the hub 🌍';
+  document.getElementById('auth-sub').textContent=l?'Log in to your culinary hub account':'Create your free culinary profile';
+}
+const ham=document.getElementById('ham'),mm=document.getElementById('mm');
+ham.addEventListener('click',()=>{ham.classList.toggle('op');mm.classList.toggle('op');});
+function cmm(){ham.classList.remove('op');mm.classList.remove('op');}
+window.addEventListener('scroll',()=>{
+  document.getElementById('nav').classList.toggle('sc',window.scrollY>10);
+  const secs=['hero','about','services','community','portfolio','recipes','pricing','faq','contact'];
+  let cur='';secs.forEach(id=>{const e=document.getElementById(id);if(e&&window.scrollY>=e.offsetTop-120)cur=id;});
+  document.querySelectorAll('.nlinks a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));
+},{passive:true});
+const ro=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');ro.unobserve(e.target);}}),{threshold:0.12});
+document.querySelectorAll('.rv').forEach(el=>ro.observe(el));
+(function(){
+  const track=document.getElementById('ctrack'),slides=track?track.querySelectorAll('.tslide'):[],dw=document.getElementById('cdots');
+  if(!slides.length)return;let cur=0,timer;
+  slides.forEach((_,i)=>{const d=document.createElement('div');d.className='cdot'+(i===0?' on':'');d.onclick=()=>go(i);dw.appendChild(d);});
+  function go(n){cur=(n+slides.length)%slides.length;track.style.transform=`translateX(-${cur*100}%)`;dw.querySelectorAll('.cdot').forEach((d,i)=>d.classList.toggle('on',i===cur));clearInterval(timer);timer=setInterval(()=>go(cur+1),5000);}
+  document.getElementById('cprev').onclick=()=>go(cur-1);document.getElementById('cnext').onclick=()=>go(cur+1);timer=setInterval(()=>go(cur+1),5000);
+})();
+function fport(cat,btn){document.querySelectorAll('.pfb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');document.querySelectorAll('.pc-card').forEach(c=>{c.style.display=(cat==='all'||c.dataset.cat===cat)?'':'none';});}
+const lbdata=[
+  {tag:'courses',emoji:'🍣',title:'Tokyo Knife Mastery',meta:'Hiroshi Kato · 2,800 students enrolled',desc:'A 12-module deep-dive into Japanese knife techniques — from basic julienne to katsuramuki. The course launched to a global audience of 2,800 students within the first 6 weeks.'},
+  {tag:'heritage',emoji:'🫕',title:'Oaxacan Mole Archive',meta:'Lucia Morales · 14 regional recipes documented',desc:'14 endangered mole recipes from the Oaxacan highlands, documented with video, written technique notes, and cultural history. Now permanently archived for future generations.'},
+  {tag:'branding',emoji:'🥐',title:'Maison Dubois Digital',meta:'Paris pâtisserie · 50k+ followers gained',desc:'Full digital identity for a 3rd-generation Parisian pâtisserie — profile, course launch, and social strategy resulting in 50,000+ new followers across platforms.'},
+  {tag:'courses',emoji:'🍛',title:'Kerala Spice Journey',meta:'Priya Nair · $120k revenue in year one',desc:'Priya\'s 4-course spice series went from zero to $120,000 in creator revenue within its first year — entirely through the Hub\'s zero-commission storefront.'},
+  {tag:'branding',emoji:'🥩',title:'Gaucho Fuego Brand',meta:'Buenos Aires · 3 international pop-up deals',desc:'A complete brand identity for a Buenos Aires asado specialist, leading to 3 international pop-up partnership deals secured through the Hub\'s talent discovery feature.'},
+  {tag:'heritage',emoji:'🍱',title:'Bento Tradition Project',meta:'Osaka collective · 7 endangered recipes preserved',desc:'A collaborative heritage project documenting 7 endangered bento traditions from rural Osaka, published in the Hub\'s open knowledge archive in 4 languages.'},
+];
+function openlb(i){const d=lbdata[i];document.getElementById('lbimg').innerHTML=`<button class="lbclose" onclick="clb()">✕</button><span style="font-size:96px">${d.emoji}</span>`;document.getElementById('lbtag').textContent=d.tag;document.getElementById('lbtitle').textContent=d.title;document.getElementById('lbmeta').textContent=d.meta;document.getElementById('lbdesc').textContent=d.desc;document.getElementById('lb').classList.add('op');document.body.style.overflow='hidden';}
+function clb(){document.getElementById('lb').classList.remove('op');document.body.style.overflow='';}
+function clbout(e){if(e.target===document.getElementById('lb'))clb();}
+const recipes=[
+  {title:'Tonkotsu Ramen',chef:'Hiroshi Kato',cuisine:'japanese',time:'4 hrs',diff:'Advanced',emoji:'🍜',bg:'#fff3e0',tags:['ramen','broth','pork']},
+  {title:'Mole Negro',chef:'Lucia Morales',cuisine:'mexican',time:'3 hrs',diff:'Expert',emoji:'🫕',bg:'#fce4ec',tags:['mole','chilli','heritage']},
+  {title:'Kerala Fish Curry',chef:'Priya Nair',cuisine:'indian',time:'45 min',diff:'Medium',emoji:'🍛',bg:'#e8f5e9',tags:['curry','coconut','spice']},
+  {title:'Croissant Feuilleté',chef:'Jean Dubois',cuisine:'french',time:'6 hrs',diff:'Expert',emoji:'🥐',bg:'#fff8e1',tags:['pastry','laminated','butter']},
+  {title:'Jollof Rice',chef:'Emeka Nwosu',cuisine:'nigerian',time:'1.5 hrs',diff:'Easy',emoji:'🍚',bg:'#fbe9e7',tags:['rice','tomato','west african']},
+  {title:'Mapo Tofu',chef:'Lin Wei',cuisine:'chinese',time:'30 min',diff:'Medium',emoji:'🍲',bg:'#e3f2fd',tags:['sichuan','tofu','spicy']},
+  {title:'Tagliatelle al Ragù',chef:'Sofia Ricci',cuisine:'italian',time:'2 hrs',diff:'Medium',emoji:'🍝',bg:'#e8f5e9',tags:['pasta','beef','italian']},
+  {title:'Crème Brûlée',chef:'Sophie Martin',cuisine:'french',time:'1 hr',diff:'Medium',emoji:'🍮',bg:'#fff3e0',tags:['dessert','custard','french']},
+  {title:'Bento Deluxe',chef:'Aiko Tanaka',cuisine:'japanese',time:'1 hr',diff:'Easy',emoji:'🍱',bg:'#f3e5f5',tags:['bento','japanese','balanced']},
+];
+let activeTag='all';
+function settag(tag,btn){activeTag=tag;document.querySelectorAll('.rtag').forEach(b=>b.classList.remove('on'));btn.classList.add('on');filterrecipes();}
+function filterrecipes(){
+  const q=(document.getElementById('rsearch').value||'').toLowerCase();
+  const filtered=recipes.filter(r=>{const mT=activeTag==='all'||r.cuisine===activeTag;const mQ=!q||r.title.toLowerCase().includes(q)||r.chef.toLowerCase().includes(q)||r.tags.some(t=>t.includes(q));return mT&&mQ;});
+  const grid=document.getElementById('rgrid'),none=document.getElementById('noresults');
+  if(!filtered.length){grid.innerHTML='';none.style.display='';return;}
+  none.style.display='none';
+  grid.innerHTML=filtered.map(r=>`<div class="rcard"><div class="rcard-img" style="background:${r.bg}">${r.emoji}<span class="rbadge">${r.diff}</span></div><div class="rcard-body"><div class="rcard-title">${r.title}</div><div class="rcard-chef">by ${r.chef}</div><div class="rcard-meta"><span>⏱ ${r.time}</span></div><div class="rcard-tags">${r.tags.map(t=>`<span class="rtchip">${t}</span>`).join('')}</div></div></div>`).join('');
+}
+filterrecipes();
+let isAnnual=false;
+function togbill(){isAnnual=!isAnnual;document.getElementById('btpill').classList.toggle('yr',isAnnual);document.getElementById('lblmo').classList.toggle('on',!isAnnual);document.getElementById('lblyr').classList.toggle('on',isAnnual);document.getElementById('pp-pro').textContent=isAnnual?'per month · billed annually':'per month · billed monthly';document.getElementById('pp-school').textContent=isAnnual?'per month · billed annually':'per month · billed monthly';document.querySelectorAll('.pv').forEach(el=>{const v=parseInt(isAnnual?el.dataset.yr:el.dataset.mo);el.textContent=v.toLocaleString();});}
+function togfaq(btn){const item=btn.parentElement;const wasOpen=item.classList.contains('op');document.querySelectorAll('.faqitem.op').forEach(i=>i.classList.remove('op'));if(!wasOpen)item.classList.add('op');}
+async function sendform(e){
+  e.preventDefault();const btn=document.getElementById('fsub');btn.disabled=true;btn.textContent='Sending…';
+  try{const res=await fetch('https://formspree.io/f/xpwzgqvk',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({name:document.getElementById('fn').value+' '+document.getElementById('ln').value,email:document.getElementById('em').value,topic:document.getElementById('tp').value,message:document.getElementById('msg').value})});document.getElementById('cformel').style.display='none';document.getElementById(res.ok?'fsuccess':'ferror').style.display='block';}
+  catch{document.getElementById('cformel').style.display='none';document.getElementById('ferror').style.display='block';}
+}
+function subnl(){const el=document.getElementById('nlemail');if(!el.value)return;el.value='';if(typeof toast==='function')toast('You\'re on the list! 🎉','success');}
+function escHTML(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
+function toast(msg,type){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast'+(type?' '+type:'');t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),3000);}
+</script>
+
+<!-- ████ Supabase + real backend ████ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js"></script>
+</body>
+</html>
