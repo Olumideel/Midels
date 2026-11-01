@@ -19,36 +19,64 @@ const STATE = {
 };
 
 // ── Init on page load ──────────────────────────────────────────────
-async function initBackend() {
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    await loadCurrentProfile(session.user.id);
-  }
-  await loadAllProfiles();
-  renderChefGrid(STATE.profiles);
+function normalizeProfile(profile) {
+  if (!profile) return profile;
+  return {
+    ...profile,
+    name: profile.name || profile.display_name || profile.full_name || 'Member'
+  };
+}
 
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session) {
-      await loadCurrentProfile(session.user.id);
-      onLogin();
-    }
+async function initBackend() {
+  // Auth handlers below own the SIGNED_IN UI transition, preventing duplicate
+  // profile loads and duplicate realtime subscriptions.
+  sb.auth.onAuthStateChange((event) => {
     if (event === 'SIGNED_OUT') {
       STATE.currentUser = null;
+      if (STATE.messageChannel) {
+        sb.removeChannel(STATE.messageChannel);
+        STATE.messageChannel = null;
+      }
       onLoggedOutUI();
     }
   });
+
+  const { data: { session }, error } = await sb.auth.getSession();
+  if (error) console.error('Unable to restore session:', error);
+
+  if (session) {
+    const profile = await loadCurrentProfile(session.user.id);
+    if (profile) {
+      await onLogin();
+      return;
+    }
+    toast('Your account is signed in, but its profile could not be loaded. Please contact support.', 'error');
+  }
+
+  await loadAllProfiles();
+  renderChefGrid(STATE.profiles);
 }
 
 async function loadCurrentProfile(userId) {
   const { data, error } = await sb.from('profiles').select('*').eq('id', userId).single();
-  if (error) { console.error(error); return; }
-  STATE.currentUser = data;
+  if (error) {
+    console.error('Unable to load current profile:', error);
+    STATE.currentUser = null;
+    return null;
+  }
+  STATE.currentUser = normalizeProfile(data);
+  return STATE.currentUser;
 }
 
 async function loadAllProfiles() {
   const { data, error } = await sb.from('profiles').select('*');
-  if (error) { console.error(error); return; }
-  STATE.profiles = data.filter(p => !STATE.currentUser || p.id !== STATE.currentUser.id);
+  if (error) {
+    console.error('Unable to load profiles:', error);
+    return;
+  }
+  STATE.profiles = (data || [])
+    .map(normalizeProfile)
+    .filter(p => !STATE.currentUser || p.id !== STATE.currentUser.id);
 }
 
 // ── REAL AUTH ────────────────────────────────────────────────────────
@@ -100,10 +128,16 @@ async function loginUser() {
     return;
   }
 
-  await loadCurrentProfile(data.user.id);
+  const profile = await loadCurrentProfile(data.user.id);
+  if (!profile) {
+    toast('Signed in, but your profile could not be loaded. Please try again or contact support.', 'error');
+    return;
+  }
+
   closeAuth();
   await onLogin();
-  toast(`Welcome back, ${STATE.currentUser.name.split(' ')[0]}! 👋`, 'success');
+  const firstName = (profile.name || profile.display_name || profile.full_name || 'there').trim().split(/\\s+/)[0];
+  toast(`Welcome back, ${firstName}! 👋`, 'success');
 }
 
 async function logoutUser() {
