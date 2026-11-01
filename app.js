@@ -136,7 +136,7 @@ async function loginUser() {
 
   closeAuth();
   await onLogin();
-  const firstName = (profile.name || profile.display_name || profile.full_name || 'there').trim().split(/\\s+/)[0];
+  const firstName = (profile.name || profile.display_name || profile.full_name || 'there').trim().split(/\s+/)[0];
   toast(`Welcome back, ${firstName}! 👋`, 'success');
 }
 
