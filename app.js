@@ -596,7 +596,7 @@ async function subnl() {
   }
   try {
     const { data, error } = await sb.functions.invoke('newsletter-signup', {
-      body: { email, website: '' }
+      body: { email, website: document.getElementById('nl-website')?.value || '' }
     });
     if (error || data?.error) throw error || new Error(data.error);
     input.value = '';
