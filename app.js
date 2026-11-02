@@ -455,7 +455,7 @@ async function loadPublicRecipes() {
   grid.innerHTML = '<div class="recipe-loading">Loading recipes from the community…</div>';
 
   const { data, error } = await sb.from('recipes')
-    .select('id,author_id,title,description,image_url,cuisine,category,difficulty,prep_minutes,cook_minutes,servings,tags,created_at')
+    .select('id,author_id,title,description,image_url,cuisine,category,difficulty,prep_minutes,cook_minutes,servings,ingredients,instructions,tags,created_at')
     .eq('is_published', true)
     .order('created_at', { ascending: false })
     .limit(60);
@@ -525,7 +525,10 @@ function filterrecipes() {
       : '<span class="rcard-placeholder">🍽️</span>';
     const tags = (recipe.tags || []).slice(0, 4)
       .map(tag => '<span class="rtchip">' + escHTML(tag) + '</span>').join('');
-    return '<article class="rcard"><div class="rcard-img">' + image +
+    const recipeId = escHTML(recipe.id || '');
+    return '<article class="rcard rcard-clickable" role="button" tabindex="0" aria-label="View recipe: ' + escHTML(recipe.title) +
+      '" onclick="openRecipeDetail(\'' + recipeId + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openRecipeDetail(\'' + recipeId + '\')}">' +
+      '<div class="rcard-img">' + image +
       '<span class="rbadge">' + escHTML(recipe.difficulty || recipe.cuisine || 'Community recipe') + '</span></div>' +
       '<div class="rcard-body"><div class="rcard-title">' + escHTML(recipe.title) + '</div>' +
       '<div class="rcard-author">' + avatarMarkup(recipe.author, 'rcard-author-avatar') +
@@ -533,8 +536,51 @@ function filterrecipes() {
       '<div class="rcard-meta"><span>⏱ ' + escHTML(time) + '</span>' +
       (recipe.servings ? '<span> · Serves ' + Number(recipe.servings) + '</span>' : '') + '</div>' +
       (recipe.description ? '<p class="rcard-description">' + escHTML(recipe.description) + '</p>' : '') +
-      '<div class="rcard-tags">' + tags + '</div></div></article>';
+      '<div class="rcard-tags">' + tags + '</div><div class="rcard-open-hint">View full recipe →</div></div></article>';
   }).join('');
+}
+
+// ── FULL RECIPE VIEW ───────────────────────────────────────────────
+function closeRecipeDetail() {
+  document.getElementById('recipe-detail-modal')?.classList.remove('op');
+}
+
+function openRecipeDetail(recipeId) {
+  const recipe = liveRecipes.find(item => String(item.id) === String(recipeId));
+  if (!recipe) {
+    toast('This recipe is no longer available. Refresh and try again.', 'error');
+    return;
+  }
+  const modal = document.getElementById('recipe-detail-modal');
+  const content = document.getElementById('recipe-detail-content');
+  if (!modal || !content) return;
+  const imageUrl = typeof recipe.image_url === 'string' && /^https:\/\//i.test(recipe.image_url) ? recipe.image_url : '';
+  const foodImage = imageUrl
+    ? '<img class="recipe-detail-photo" src="' + escHTML(imageUrl) + '" alt="' + escHTML(recipe.title) + '" onerror="this.style.display=\'none\'">'
+    : '<div class="recipe-detail-photo recipe-detail-photo-empty">🍽️<span>Food photograph not provided</span></div>';
+  const list = value => Array.isArray(value) ? value : [];
+  const ingredients = list(recipe.ingredients).map(item => '<li>' + escHTML(String(item)) + '</li>').join('');
+  const instructions = list(recipe.instructions).map((step, index) => '<li><span class="recipe-step-number">' + (index + 1) + '</span><span>' + escHTML(String(step)) + '</span></li>').join('');
+  const author = recipe.author || {};
+  const minutes = (Number(recipe.prep_minutes) || 0) + (Number(recipe.cook_minutes) || 0);
+  content.innerHTML = foodImage +
+    '<div class="recipe-detail-inner">' +
+    '<div class="profile-kicker">' + escHTML(recipe.cuisine || 'COMMUNITY RECIPE') + '</div>' +
+    '<h2>' + escHTML(recipe.title) + '</h2>' +
+    '<div class="rcard-author recipe-detail-author">' + avatarMarkup(author, 'rcard-author-avatar') +
+    '<span class="rcard-chef">Shared by ' + escHTML(recipe.chef || 'Community chef') + '</span></div>' +
+    '<div class="recipe-detail-stats">' +
+    '<span>Prep: ' + (Number(recipe.prep_minutes) || 0) + ' min</span>' +
+    '<span>Cook: ' + (Number(recipe.cook_minutes) || 0) + ' min</span>' +
+    '<span>Total: ' + minutes + ' min</span>' +
+    '<span>Serves: ' + (Number(recipe.servings) || '—') + '</span>' +
+    '<span>Level: ' + escHTML(recipe.difficulty || 'Not specified') + '</span></div>' +
+    (recipe.description ? '<p class="recipe-detail-description">' + escHTML(recipe.description) + '</p>' : '') +
+    '<h3>Ingredients</h3><ul class="recipe-ingredient-list">' + (ingredients || '<li>Ingredients have not been added.</li>') + '</ul>' +
+    '<h3>Preparation</h3><ol class="recipe-instruction-list">' + (instructions || '<li>Preparation steps have not been added.</li>') + '</ol>' +
+    (Array.isArray(recipe.tags) && recipe.tags.length ? '<div class="rcard-tags">' + recipe.tags.map(tag => '<span class="rtchip">' + escHTML(tag) + '</span>').join('') + '</div>' : '') +
+    '</div>';
+  modal.classList.add('op');
 }
 
 // ── CHECKOUT + NEWSLETTER ───────────────────────────────────────────
