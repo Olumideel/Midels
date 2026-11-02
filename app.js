@@ -24,7 +24,8 @@ function normalizeProfile(profile) {
   if (!profile) return profile;
   return {
     ...profile,
-    name: profile.name || profile.display_name || profile.full_name || 'Member'
+    name: profile.name || profile.display_name || profile.full_name || 'Member',
+    location: [profile.city, profile.country_code].filter(Boolean).join(', ')
   };
 }
 
@@ -591,7 +592,8 @@ async function acceptFriendRequest(requestId, fromId) {
 }
 
 async function declineFriendRequest(requestId, fromId) {
-  await sb.from('friend_requests').update({ status: 'declined' }).eq('id', requestId);
+  const { error } = await sb.from('friend_requests').update({ status: 'declined' }).eq('id', requestId);
+  if (error) { toast(error.message, 'error'); return; }
   const user = getUser(fromId);
   toast(`Request from ${user.name} declined.`);
   await updateBadges();
@@ -701,6 +703,10 @@ async function sendChatMsg() {
   const input = document.getElementById('chat-input');
   const messageBody = input.value.trim();
   if (!messageBody || !STATE.activeConversationId || !STATE.currentUser) return;
+  if (messageBody.length > 2000) {
+    toast('Messages must be 2,000 characters or fewer.', 'error');
+    return;
+  }
 
   const { error } = await sb.from('messages').insert({
     conversation_id: STATE.activeConversationId,
