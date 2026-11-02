@@ -267,6 +267,9 @@ async function handlePaymentReturn() {
       if (data.purpose === 'product_purchase') {
         toast('Payment verified. Your digital product is ready in My purchases.', 'success');
         await loadMarketplace();
+      } else if (data.purpose === 'course_enrollment') {
+        toast('Payment verified. You are now enrolled in the course.', 'success');
+        await loadLearningDashboard();
       } else {
         toast('Payment verified. Your subscription is now active.', 'success');
       }
@@ -1469,7 +1472,7 @@ async function loadLearningDashboard(){
  }
  const dashboard=document.getElementById('learning-student-dashboard'),instructor=document.getElementById('learning-instructor-courses');
  if(!STATE.currentUser){dashboard.textContent='Sign in to view your learning progress.';instructor.textContent='Sign in to manage courses.';return}
- const [enrolments,own]=await Promise.all([sb.from('enrollments').select('id,course_id,courses(title)').eq('student_id',STATE.currentUser.id),sb.from('courses').select('id,title,is_published').eq('instructor_id',STATE.currentUser.id)]);
+ const [enrolments,own]=await Promise.all([sb.from('enrollments').select('id,course_id,courses(title)').eq('student_id',STATE.currentUser.id).is('revoked_at',null),sb.from('courses').select('id,title,is_published').eq('instructor_id',STATE.currentUser.id)]);
  if(enrolments.error)dashboard.textContent='Unable to load enrolments.';else if(!enrolments.data?.length)dashboard.innerHTML='<p class="learn-muted">You have not enrolled in a course yet.</p>';else{
   const {data:progress}=await sb.from('lesson_progress').select('enrollment_id,lesson_id').eq('student_id',STATE.currentUser.id);
   const {data:lessons}=await sb.from('course_lessons').select('id,course_id').eq('is_published',true);
@@ -1496,16 +1499,23 @@ async function addLearningLesson(courseId){
 }
 async function enrolLearningCourse(courseId){
  if(!STATE.currentUser){openAuth('login');return}
- const {data:course,error}=await sb.from('courses').select('id,price_minor').eq('id',courseId).eq('is_published',true).single();
+ const {data:course,error}=await sb.from('courses').select('id,price_minor,currency,instructor_id').eq('id',courseId).eq('is_published',true).single();
  if(error||!course){toast('Course unavailable.','error');return}
- if(Number(course.price_minor)>0){toast('Paid course checkout is coming in the commerce phase.');return}
+ const {data:existing}=await sb.from('enrollments').select('id').eq('course_id',courseId).eq('student_id',STATE.currentUser.id).is('revoked_at',null).maybeSingle();
+ if(existing){toast('You are already enrolled in this course.','success');await loadLearningDashboard();return}
+ if(Number(course.price_minor)>0){
+  const {data,error:checkoutError}=await sb.functions.invoke('create-payment',{body:{purpose:'course_enrollment',course_id:courseId}});
+  if(checkoutError||!data?.authorization_url){toast(checkoutError?.message||data?.error||'Course checkout could not be started.','error');return}
+  window.location.assign(data.authorization_url);return;
+ }
  const {error:enrolError}=await sb.rpc('enroll_free_course',{course_uuid:courseId});
- if(enrolError){toast('Enrolment failed: '+enrolError.message,'error');return}toast('You are enrolled!','success');await loadLearningDashboard();
+ if(enrolError){toast('Enrolment failed: '+enrolError.message,'error');return}
+ toast('You are enrolled!','success');await loadLearningDashboard();
 }
 async function viewLearningCourse(courseId){
  const {data:course,error}=await sb.from('courses').select('id,title,description,instructor_id').eq('id',courseId).single();if(error||!course){toast('Course unavailable.','error');return}
  const {data:lessons}=await sb.from('course_lessons').select('id,title,description,content,position,is_published').eq('course_id',courseId).order('position');
- const {data:enrol}=STATE.currentUser?await sb.from('enrollments').select('id').eq('course_id',courseId).eq('student_id',STATE.currentUser.id).maybeSingle():{data:null};
+ const {data:enrol}=STATE.currentUser?await sb.from('enrollments').select('id').eq('course_id',courseId).eq('student_id',STATE.currentUser.id).is('revoked_at',null).maybeSingle():{data:null};
  const {data:assessments}=await sb.from('course_assessments').select('id,title,description,is_published,pass_percentage').eq('course_id',courseId).order('created_at');
  const host=document.getElementById('learning-student-dashboard');if(!host)return;
  const lessonMarkup=(lessons||[]).map(l=>'<div class="learn-lesson"><span><strong>'+escHTML(l.title)+'</strong><br>'+escHTML(l.content||l.description||'')+'</span>'+(enrol&&l.is_published?'<button class="btn bo" onclick="completeLearningLesson(\''+escHTML(enrol.id)+'\',\''+escHTML(l.id)+'\')">Complete</button>':(course.instructor_id===STATE.currentUser?.id&&!l.is_published?'<button class="btn bo" onclick="publishLearningLesson(\''+escHTML(l.id)+'\',\''+escHTML(courseId)+'\')">Publish lesson</button>':''))+'</div>').join('');
