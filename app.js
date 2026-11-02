@@ -275,6 +275,74 @@ async function handlePaymentReturn() {
   }
 }
 
+// ── PUBLIC CHEF / CREATOR PROFILES ────────────────────────────────
+function safeProfileLink(value) {
+  if (typeof value !== 'string' || !value.trim()) return '';
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+
+async function openPublicProfile(userId) {
+  const user = getUser(userId);
+  if (!user?.id) return;
+  const modal = document.getElementById('public-profile-modal');
+  const content = document.getElementById('public-profile-content');
+  const website = safeProfileLink(user.website_url);
+  const instagram = safeProfileLink(user.instagram_url);
+  const role = (user.role || 'food-lover').replace(/-/g, ' ');
+  const location = user.location || 'Location not added';
+  const verified = user.is_verified ? '<span class="chef-chip">✓ Verified</span>' : '';
+
+  content.innerHTML =
+    '<div class="profile-heading">' +
+      avatarMarkup(user, 'profile-avatar') +
+      '<div><div class="profile-kicker">GLOBAL CULINARY HUB MEMBER</div>' +
+      '<h2>' + escHTML(user.name || 'Community member') + '</h2>' +
+      '<p>' + escHTML(role) + ' · ' + escHTML(location) + '</p>' + verified + '</div>' +
+    '</div>' +
+    '<p style="line-height:1.7;color:var(--muted);margin-bottom:18px;">' +
+      escHTML(user.bio || 'This member has not added a biography yet.') + '</p>' +
+    '<div class="profile-form-grid">' +
+      '<div><strong>' + Number(user.followers_count || 0).toLocaleString() + '</strong><p>Followers</p></div>' +
+      '<div><strong>' + Number(user.recipes_count || 0).toLocaleString() + '</strong><p>Recipes shared</p></div>' +
+    '</div>' +
+    '<div class="profile-actions" style="justify-content:flex-start;flex-wrap:wrap;">' +
+      '<button class="btn bp" onclick="toggleFollow(\'' + escHTML(user.id) + '\')">Follow</button>' +
+      '<button class="btn ghost" onclick="closePublicProfile();openChat(\'' + escHTML(user.id) + '\')">Message</button>' +
+      (website ? '<a class="btn ghost" href="' + escHTML(website) + '" target="_blank" rel="noopener noreferrer">Website ↗</a>' : '') +
+      (instagram ? '<a class="btn ghost" href="' + escHTML(instagram) + '" target="_blank" rel="noopener noreferrer">Instagram ↗</a>' : '') +
+    '</div>' +
+    '<div style="margin-top:24px;"><h3 style="font:20px var(--display);margin-bottom:12px;">Recent recipes</h3><div id="public-profile-recipes" class="profile-recipe-list">Loading…</div></div>';
+
+  modal.classList.add('op');
+  const { data: recipes, error } = await sb.from('recipes')
+    .select('id,title,cuisine,difficulty')
+    .eq('author_id', userId)
+    .eq('is_published', true)
+    .order('created_at', { ascending: false })
+    .limit(4);
+  const recipeList = document.getElementById('public-profile-recipes');
+  if (!recipeList || !modal.classList.contains('op')) return;
+  if (error || !recipes?.length) {
+    recipeList.textContent = 'No published recipes yet.';
+    return;
+  }
+  recipeList.innerHTML = recipes.map(recipe =>
+    '<div style="padding:10px 0;border-bottom:1px solid var(--border);">' +
+      '<strong>' + escHTML(recipe.title) + '</strong>' +
+      '<span style="color:var(--muted);font-size:12px;"> · ' +
+      escHTML(recipe.cuisine || 'Cuisine not listed') + '</span></div>'
+  ).join('');
+}
+
+function closePublicProfile() {
+  document.getElementById('public-profile-modal')?.classList.remove('op');
+}
+
 // ── RECIPE COMPOSER ────────────────────────────────────────────────
 function openRecipeComposer() {
   if (!STATE.currentUser) {
@@ -1005,7 +1073,7 @@ async function renderChefGrid(profiles) {
       <div class="chef-card-top">
         ${avatarMarkup(u, 'chef-avatar')}
         <div class="chef-info">
-          <div class="chef-name">${escHTML(u.name)}</div>
+          <div class="chef-name" role="button" tabindex="0" onclick="openPublicProfile('${u.id}')">${escHTML(u.name)}</div>
           <div class="chef-role">${(u.role||'').replace('-', ' ')}</div>
           <div class="chef-location">📍 ${escHTML(u.location || 'Location not set')}</div>
         </div>
