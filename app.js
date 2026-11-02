@@ -650,6 +650,7 @@ async function openMyProfile() {
   document.getElementById('profile-country').value = (profile.country_code || '').trim();
   document.getElementById('profile-bio').value = profile.bio || '';
   document.getElementById('profile-avatar-url').value = profile.avatar_url || '';
+  document.getElementById('profile-photo-file').value = '';
   document.getElementById('profile-website').value = profile.website_url || '';
   document.getElementById('profile-instagram').value = profile.instagram_url || '';
   const avatar = document.getElementById('profile-avatar');
@@ -660,6 +661,22 @@ async function openMyProfile() {
 }
 function closeMyProfile() {
   document.getElementById('profile-modal').classList.remove('op');
+}
+function previewProfilePhoto(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+    event.target.value = '';
+    toast('Choose a JPG, PNG, WEBP or GIF image.', 'error');
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    event.target.value = '';
+    toast('Profile pictures must be 5 MB or smaller.', 'error');
+    return;
+  }
+  const previewUrl = URL.createObjectURL(file);
+  document.getElementById('profile-avatar').innerHTML = '<img src="' + previewUrl + '" alt="Selected profile photo">';
 }
 async function saveMyProfile(event) {
   event.preventDefault();
@@ -672,6 +689,26 @@ async function saveMyProfile(event) {
     toast('Username must be 3–30 characters and use letters, numbers, dots, underscores or hyphens.', 'error'); return;
   }
   if (country && !/^[A-Z]{2}$/.test(country)) { toast('Country code must contain exactly two letters, such as NG.', 'error'); return; }
+  const button = document.getElementById('profile-save-btn');
+  button.disabled = true;
+  button.textContent = 'Saving…';
+  let avatarUrl = document.getElementById('profile-avatar-url').value.trim() || null;
+  const photoFile = document.getElementById('profile-photo-file').files[0];
+  if (photoFile) {
+    const extension = ({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'})[photoFile.type];
+    const photoPath = STATE.currentUser.id + '/profile-photo.' + extension;
+    const { error: uploadError } = await sb.storage.from('profile-photos').upload(photoPath, photoFile, {
+      cacheControl: '3600', upsert: true, contentType: photoFile.type
+    });
+    if (uploadError) {
+      button.disabled = false;
+      button.textContent = 'Save changes';
+      toast('Photo upload failed: ' + uploadError.message, 'error');
+      return;
+    }
+    const { data: publicUrlData } = sb.storage.from('profile-photos').getPublicUrl(photoPath);
+    avatarUrl = publicUrlData.publicUrl;
+  }
   const updates = {
     full_name: fullName,
     display_name: document.getElementById('profile-display-name').value.trim() || null,
@@ -679,14 +716,11 @@ async function saveMyProfile(event) {
     city: document.getElementById('profile-city').value.trim() || null,
     country_code: country || null,
     bio: document.getElementById('profile-bio').value.trim() || null,
-    avatar_url: document.getElementById('profile-avatar-url').value.trim() || null,
+    avatar_url: avatarUrl,
     website_url: document.getElementById('profile-website').value.trim() || null,
     instagram_url: document.getElementById('profile-instagram').value.trim() || null,
     updated_at: new Date().toISOString()
   };
-  const button = document.getElementById('profile-save-btn');
-  button.disabled = true;
-  button.textContent = 'Saving…';
   const { data, error } = await sb.from('profiles').update(updates).eq('id', STATE.currentUser.id).select().single();
   button.disabled = false;
   button.textContent = 'Save changes';
