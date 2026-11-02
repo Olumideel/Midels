@@ -657,11 +657,11 @@ input,textarea,select{font-family:var(--body);}
         <button class="btn bw" onclick="openAuth('signup')">start for free →</button>
         <a href="#portfolio" class="btn bgw">explore our work</a>
       </div>
-      <div class="hstats">
-        <div><div class="hsn">48<span>k+</span></div><div class="hsl">chefs &amp; creators</div></div>
-        <div><div class="hsn">140<span>+</span></div><div class="hsl">countries reached</div></div>
-        <div><div class="hsn">2.4<span>m</span></div><div class="hsl">recipes shared</div></div>
-        <div><div class="hsn">98<span>%</span></div><div class="hsl">client satisfaction</div></div>
+      <div class="hstats" aria-label="Live Global Culinary Hub statistics">
+        <div><div class="hsn" id="hub-members">—</div><div class="hsl">community members</div></div>
+        <div><div class="hsn" id="hub-countries">—</div><div class="hsl">countries represented</div></div>
+        <div><div class="hsn" id="hub-recipes">—</div><div class="hsl">published recipes</div></div>
+        <div><div class="hsn">6</div><div class="hsl">creator account roles</div></div>
       </div>
     </div>
   </div>
@@ -1104,7 +1104,7 @@ function filterrecipes(){
   none.style.display='none';
   grid.innerHTML=filtered.map(r=>`<div class="rcard"><div class="rcard-img" style="background:${r.bg}">${r.emoji}<span class="rbadge">${r.diff}</span></div><div class="rcard-body"><div class="rcard-title">${r.title}</div><div class="rcard-chef">by ${r.chef}</div><div class="rcard-meta"><span>⏱ ${r.time}</span></div><div class="rcard-tags">${r.tags.map(t=>`<span class="rtchip">${t}</span>`).join('')}</div></div></div>`).join('');
 }
-filterrecipes();
+document.getElementById('rgrid').innerHTML='<div class="recipe-loading">Loading community recipes…</div>';
 let isAnnual=false;
 function togbill(){isAnnual=!isAnnual;document.getElementById('btpill').classList.toggle('yr',isAnnual);document.getElementById('lblmo').classList.toggle('on',!isAnnual);document.getElementById('lblyr').classList.toggle('on',isAnnual);document.getElementById('pp-pro').textContent=isAnnual?'₦83,160 billed once yearly':'per month · billed monthly';document.getElementById('pp-school').textContent=isAnnual?'₦251,160 billed once yearly':'per month · billed monthly';document.querySelectorAll('.pv').forEach(el=>{const v=parseInt(isAnnual?el.dataset.yr:el.dataset.mo);el.textContent=v.toLocaleString();});}
 function togfaq(btn){const item=btn.parentElement;const wasOpen=item.classList.contains('op');document.querySelectorAll('.faqitem.op').forEach(i=>i.classList.remove('op'));if(!wasOpen)item.classList.add('op');}
