@@ -1073,7 +1073,7 @@ async function renderChefGrid(profiles) {
       <div class="chef-card-top">
         ${avatarMarkup(u, 'chef-avatar')}
         <div class="chef-info">
-          <div class="chef-name" role="button" tabindex="0" onclick="openPublicProfile('${u.id}')">${escHTML(u.name)}</div>
+          <div class="chef-name" role="button" tabindex="0" onclick="openPublicProfile('${u.id}')" onkeydown="if(event.key==='Enter'||event.key===' ')openPublicProfile('${u.id}')">${escHTML(u.name)}</div>
           <div class="chef-role">${(u.role||'').replace('-', ' ')}</div>
           <div class="chef-location">📍 ${escHTML(u.location || 'Location not set')}</div>
         </div>
