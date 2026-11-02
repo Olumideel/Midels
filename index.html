@@ -948,7 +948,13 @@ input,textarea,select{font-family:var(--body);}
 <section id="marketplace" style="padding:76px 0;background:var(--ice)">
  <div class="wrap">
   <div class="learn-head"><span class="lbl">chef marketplace</span><h2 class="h2">A storefront for every culinary creator.</h2><p class="sub" style="margin:0 auto">Discover recipe books and downloadable culinary resources. Purchases are verified before private files become available.</p></div>
+  <div class="market-tools">
+   <input id="marketplace-search" type="search" placeholder="Search recipe books and downloads…" aria-label="Search marketplace" oninput="filterMarketplaceProducts()">
+   <select id="marketplace-category-filter" aria-label="Filter by category" onchange="filterMarketplaceProducts()"><option value="">All categories</option><option value="Nigerian cuisine">Nigerian cuisine</option><option value="Global cuisine">Global cuisine</option><option value="Baking &amp; Pastry">Baking &amp; Pastry</option><option value="Nutrition &amp; Wellness">Nutrition &amp; Wellness</option><option value="Kitchen Skills">Kitchen Skills</option><option value="Other">Other</option></select>
+   <select id="marketplace-sort" aria-label="Sort products" onchange="filterMarketplaceProducts()"><option value="newest">Newest first</option><option value="title">Name A–Z</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option></select>
+  </div>
   <div class="market-grid" id="marketplace-products"><p class="learn-muted">Loading digital products…</p></div>
+  <p id="marketplace-filter-empty" class="learn-muted" hidden>No products match those filters.</p>
   <div class="market-workspace">
    <div class="learn-panel">
     <h3>Open your digital storefront</h3>
@@ -956,13 +962,14 @@ input,textarea,select{font-family:var(--body);}
     <form id="marketplace-product-form" class="market-form" onsubmit="createMarketplaceProduct(event)" style="display:none">
      <label>Product title<input id="marketplace-product-title" maxlength="120" required placeholder="e.g. The Complete Nigerian Soups Guide"></label>
      <label>Product type<select id="marketplace-product-type" required><option value="recipe_book">Recipe book</option><option value="digital_download">Digital download</option></select></label>
-     <label>Price (NGN)<input id="marketplace-product-price" type="number" min="1" step="1" required placeholder="5000"></label>
+     <label>Category<select id="marketplace-product-category" required><option value="Nigerian cuisine">Nigerian cuisine</option><option value="Global cuisine">Global cuisine</option><option value="Baking &amp; Pastry">Baking &amp; Pastry</option><option value="Nutrition &amp; Wellness">Nutrition &amp; Wellness</option><option value="Kitchen Skills">Kitchen Skills</option><option value="Other">Other</option></select></label>
+     <label>Price (NGN)<input id="marketplace-product-price" type="number" min="1" max="100000000" step="1" required placeholder="5000"></label>
      <label>Cover image URL (optional)<input id="marketplace-product-cover" type="url" placeholder="https://…"></label>
      <label class="market-wide">Description<textarea id="marketplace-product-description" rows="3" maxlength="1200" placeholder="Describe what buyers will receive."></textarea></label>
      <label class="market-wide">Digital file (PDF, ZIP, EPUB, DOCX, PPTX or XLSX; max 50 MB)<input id="marketplace-product-file" type="file" accept=".pdf,.zip,.epub,.docx,.pptx,.xlsx" required></label>
      <div class="market-wide"><button class="btn bp" type="submit">Publish digital product</button></div>
     </form>
-    <div id="marketplace-seller-products"><p class="learn-muted">Sign in to manage your storefront.</p></div>
+    <div id="marketplace-seller-stats"></div><div id="marketplace-seller-products"><p class="learn-muted">Sign in to manage your storefront.</p></div>
    </div>
    <div class="learn-panel"><h3>My purchases</h3><p class="learn-muted">Your completed digital purchases are kept here.</p><div id="marketplace-library"><p class="learn-muted">Sign in to view your downloads.</p></div></div>
   </div>
@@ -970,7 +977,7 @@ input,textarea,select{font-family:var(--body);}
  </div>
 </section>
 <style>
-.market-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.market-tools{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin:20px 0}.market-tools input,.market-tools select{min-width:0;padding:11px;border:1px solid var(--border);border-radius:9px;background:#fff;font:14px var(--body)}.market-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}.market-stats>div{background:var(--ice);padding:12px;border-radius:9px;display:grid;gap:3px}.market-stats strong{font-size:17px}.market-stats span{font-size:11px;color:var(--muted)}.market-row .learn-actions{justify-content:flex-end}.market-row .btn{padding:6px 9px;font-size:12px}.market-product[hidden]{display:none!important}.market-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .market-product{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;min-width:0;display:flex;flex-direction:column;gap:8px}
 .market-product h4{font-size:17px;margin:0;color:var(--navy)}
 .market-product-type{font-size:10px;letter-spacing:1px;color:var(--muted);font-weight:800;margin-top:4px}
