@@ -494,6 +494,7 @@ input,textarea,select{font-family:var(--body);}
 .mobile-profile-link{width:100%;text-align:left;padding:12px 14px;border-radius:8px;background:var(--sky);color:var(--navy);font-weight:700;margin:5px 0 12px;}
 @media(max-width:520px){.profile-card{padding:22px 18px;}.profile-form-grid{grid-template-columns:1fr;}.profile-wide{grid-column:auto;}.profile-actions .btn{padding:11px 16px;}}
 
+.chef-name[role="button"]{cursor:pointer;}
 .rcard-img{position:relative;overflow:hidden;}
 .rcard-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
 .rcard-placeholder{display:flex;width:100%;height:100%;align-items:center;justify-content:center;font-size:48px;}
@@ -1087,7 +1088,7 @@ input,textarea,select{font-family:var(--body);}
       </ul></div>
       <div class="fcol"><h4>stay in the loop</h4>
         <p style="font-size:13px;line-height:1.6;margin-bottom:16px;">monthly digest of new recipes, chefs to follow, and platform updates.</p>
-        <div class="fnl"><input type="email" id="nlemail" placeholder="your@email.com"/><button onclick="subnl()">subscribe →</button></div>
+        <div class="fnl"><input type="email" id="nlemail" placeholder="your@email.com" autocomplete="email"/><input type="text" id="nl-website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"/><button onclick="subnl()">subscribe →</button></div>
       </div>
     </div>
     <div class="fbot">
