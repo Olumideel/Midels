@@ -62,6 +62,8 @@ async function initBackend() {
   await loadPublicRecipes();
   await loadPlatformStats();
   await loadLearningDashboard();
+  await loadMarketplace();
+  await loadMarketplace();
 }
 
 async function loadCurrentProfile(userId) {
@@ -262,7 +264,12 @@ async function handlePaymentReturn() {
     });
     if (error) throw error;
     if (data?.verified && data.status === 'paid') {
-      toast('Payment verified. Your subscription is now active.', 'success');
+      if (data.purpose === 'product_purchase') {
+        toast('Payment verified. Your digital product is ready in My purchases.', 'success');
+        await loadMarketplace();
+      } else {
+        toast('Payment verified. Your subscription is now active.', 'success');
+      }
     } else {
       toast('Your payment is not confirmed yet. We will not activate access until Paystack verifies it.', 'error');
     }
@@ -1330,6 +1337,124 @@ async function saveMyProfile(event) {
   closeMyProfile();
 }
 
+
+
+async function loadMarketplace(){
+ const catalogue=document.getElementById('marketplace-products');
+ if(!catalogue)return;
+ const {data:products,error}=await sb.from('products')
+  .select('id,seller_id,title,description,product_type,price_minor,currency,cover_url,is_published,created_at')
+  .eq('is_published',true).order('created_at',{ascending:false}).limit(48);
+ if(error){catalogue.textContent='The marketplace is temporarily unavailable.';console.error('Marketplace load:',error)}
+ else if(!products?.length)catalogue.innerHTML='<p class="learn-muted">No digital products have been published yet. Be the first chef to open a storefront.</p>';
+ else{
+  const sellerIds=[...new Set(products.map(p=>p.seller_id))];
+  const {data:sellers}=await sb.from('profiles').select('id,full_name,display_name').in('id',sellerIds);
+  const sellerNames=new Map((sellers||[]).map(p=>[p.id,p.display_name||p.full_name||'Culinary creator']));
+  let ownedIds=new Set();
+  if(STATE.currentUser){
+   const {data:owned}=await sb.from('product_purchases').select('product_id').eq('buyer_id',STATE.currentUser.id);
+   ownedIds=new Set((owned||[]).map(x=>x.product_id));
+  }
+  catalogue.innerHTML=products.map(p=>{
+   const mine=STATE.currentUser?.id===p.seller_id;
+   const owned=ownedIds.has(p.id);
+   const image=p.cover_url?'<img src="'+escHTML(p.cover_url)+'" alt="" loading="lazy" style="width:100%;height:150px;object-fit:cover;border-radius:8px">':'<div style="height:110px;border-radius:8px;background:var(--ice);display:grid;place-items:center;font-size:42px">📚</div>';
+   const action=owned?'<button class="btn bp" onclick="downloadMarketplaceProduct(\''+escHTML(p.id)+'\')">Download purchase</button>':mine?'<span class="learn-muted">Your storefront item</span>':'<button class="btn bp" onclick="buyMarketplaceProduct(\''+escHTML(p.id)+'\')">Buy securely</button>';
+   return '<article class="market-product">'+image+'<div class="market-product-type">'+(p.product_type==='recipe_book'?'RECIPE BOOK':'DIGITAL DOWNLOAD')+'</div><h4>'+escHTML(p.title)+'</h4><p class="learn-muted">'+escHTML(p.description||'Digital resource from a culinary creator.')+'</p><p class="learn-meta">By '+escHTML(sellerNames.get(p.seller_id)||'Culinary creator')+'</p><div class="market-product-footer"><strong>'+formatCoursePrice(p.price_minor,p.currency)+'</strong>'+action+'</div></article>';
+  }).join('');
+ }
+ const form=document.getElementById('marketplace-product-form');
+ const sellerPanel=document.getElementById('marketplace-seller-products');
+ const library=document.getElementById('marketplace-library');
+ if(!STATE.currentUser){
+  if(form)form.style.display='none';
+  if(sellerPanel)sellerPanel.innerHTML='<p class="learn-muted">Sign in to publish digital products.</p>';
+  if(library)library.innerHTML='<p class="learn-muted">Sign in to view your purchased downloads.</p>';
+  return;
+ }
+ if(form)form.style.display='';
+ const [mine,purchases]=await Promise.all([
+  sb.from('products').select('id,title,product_type,price_minor,currency,is_published,created_at').eq('seller_id',STATE.currentUser.id).order('created_at',{ascending:false}),
+  sb.from('product_purchases').select('id,product_id,amount_minor,currency,created_at,products(title,product_type)').eq('buyer_id',STATE.currentUser.id).order('created_at',{ascending:false})
+ ]);
+ if(sellerPanel){
+  if(mine.error)sellerPanel.textContent='Unable to load your storefront items.';
+  else sellerPanel.innerHTML=(mine.data||[]).map(p=>'<div class="market-row"><span><strong>'+escHTML(p.title)+'</strong><br><small>'+(p.is_published?'Published':'Draft')+' · '+formatCoursePrice(p.price_minor,p.currency)+'</small></span><span class="learn-muted">'+(p.product_type==='recipe_book'?'Recipe book':'Download')+'</span></div>').join('')||'<p class="learn-muted">You have not published a digital product yet.</p>';
+ }
+ if(library){
+  if(purchases.error)library.textContent='Unable to load your purchases.';
+  else library.innerHTML=(purchases.data||[]).map(p=>'<div class="market-row"><span><strong>'+escHTML(p.products?.title||'Digital product')+'</strong><br><small>Purchased '+new Date(p.created_at).toLocaleDateString()+'</small></span><button class="btn bo" onclick="downloadMarketplaceProduct(\''+escHTML(p.product_id)+'\')">Download</button></div>').join('')||'<p class="learn-muted">Your purchased downloads will appear here.</p>';
+ }
+}
+
+async function createMarketplaceProduct(event){
+ event.preventDefault();
+ if(!STATE.currentUser){openAuth('login');return}
+ const form=document.getElementById('marketplace-product-form');
+ const title=document.getElementById('marketplace-product-title').value.trim();
+ const description=document.getElementById('marketplace-product-description').value.trim();
+ const type=document.getElementById('marketplace-product-type').value;
+ const price=Number(document.getElementById('marketplace-product-price').value);
+ const cover=document.getElementById('marketplace-product-cover').value.trim();
+ const file=document.getElementById('marketplace-product-file').files[0];
+ const allowed=['application/pdf','application/zip','application/epub+zip','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.presentationml.presentation','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+ if(!title||!Number.isFinite(price)||price<1){toast('Enter a title and a price greater than zero.','error');return}
+ if(!file||!allowed.includes(file.type)||file.size>52428800){toast('Choose a PDF, ZIP, EPUB, DOCX, PPTX or XLSX file up to 50 MB.','error');return}
+ if(cover){try{if(new URL(cover).protocol!=='https:')throw 0}catch{toast('Cover image must use HTTPS.','error');return}}
+ const submit=form.querySelector('button[type="submit"]');
+ if(submit){submit.disabled=true;submit.textContent='Publishing…'}
+ let productId=null,uploadedPath=null;
+ try{
+  const {data:product,error:insertError}=await sb.from('products').insert({
+   seller_id:STATE.currentUser.id,title,description,product_type:type,
+   price_minor:Math.round(price*100),currency:'NGN',cover_url:cover||null,
+   is_published:false
+  }).select('id').single();
+  if(insertError)throw insertError;
+  productId=product.id;
+  const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_').slice(-100);
+  uploadedPath=STATE.currentUser.id+'/'+productId+'/'+crypto.randomUUID()+'-'+safeName;
+  const {error:uploadError}=await sb.storage.from('product-files').upload(uploadedPath,file,{contentType:file.type,upsert:false});
+  if(uploadError)throw uploadError;
+  const {error:updateError}=await sb.from('products').update({
+   file_path:uploadedPath,is_published:true,updated_at:new Date().toISOString()
+  }).eq('id',productId).eq('seller_id',STATE.currentUser.id);
+  if(updateError)throw updateError;
+  form.reset();
+  toast('Your digital product is now published in the marketplace.','success');
+  await loadMarketplace();
+ }catch(error){
+  console.error('Product publishing failed:',error);
+  if(uploadedPath)await sb.storage.from('product-files').remove([uploadedPath]);
+  if(productId)await sb.from('products').delete().eq('id',productId).eq('seller_id',STATE.currentUser.id);
+  toast('Product could not be published: '+(error.message||'Please try again.'),'error');
+ }finally{
+  if(submit){submit.disabled=false;submit.textContent='Publish digital product'}
+ }
+}
+
+async function buyMarketplaceProduct(productId){
+ if(!STATE.currentUser){openAuth('login');toast('Sign in to purchase this download.');return}
+ const {data:product,error}=await sb.from('products').select('id,seller_id,is_published').eq('id',productId).eq('is_published',true).maybeSingle();
+ if(error||!product){toast('This product is no longer available.','error');return}
+ if(product.seller_id===STATE.currentUser.id){toast('You cannot purchase your own product.','error');return}
+ const {data,error:checkoutError}=await sb.functions.invoke('create-payment',{body:{purpose:'product_purchase',product_id:productId}});
+ if(checkoutError||!data?.authorization_url){toast(checkoutError?.message||data?.error||'Checkout could not be started.','error');return}
+ window.location.assign(data.authorization_url);
+}
+
+async function downloadMarketplaceProduct(productId){
+ if(!STATE.currentUser){openAuth('login');return}
+ const {data:product,error}=await sb.from('products').select('file_path,title').eq('id',productId).maybeSingle();
+ if(error||!product?.file_path){toast('Download is not available for this product.','error');return}
+ const {data:purchase}=await sb.from('product_purchases').select('id').eq('product_id',productId).eq('buyer_id',STATE.currentUser.id).maybeSingle();
+ const {data:ownerProduct}=await sb.from('products').select('seller_id').eq('id',productId).maybeSingle();
+ if(!purchase&&ownerProduct?.seller_id!==STATE.currentUser.id){toast('A completed purchase is required to download this file.','error');return}
+ const {data,error:signError}=await sb.storage.from('product-files').createSignedUrl(product.file_path,300);
+ if(signError||!data?.signedUrl){toast('Secure download could not be created.','error');return}
+ window.location.assign(data.signedUrl);
+}
 
 async function loadLearningDashboard(){
  const catalogue=document.getElementById('learning-course-catalogue');if(!catalogue)return;
