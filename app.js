@@ -58,6 +58,7 @@ async function initBackend() {
 
   await loadAllProfiles();
   renderChefGrid(STATE.profiles);
+  await loadPublicRecipes();
 }
 
 async function loadCurrentProfile(userId) {
@@ -232,6 +233,7 @@ async function onLogin() {
   await loadAllProfiles();
   await updateBadges();
   renderChefGrid(STATE.profiles);
+  await loadPublicRecipes();
   subscribeToMessages();
   await handlePaymentReturn();
 }
@@ -268,6 +270,95 @@ async function handlePaymentReturn() {
     url.searchParams.delete('trxref');
     window.history.replaceState({}, '', url.toString());
   }
+}
+
+// ── LIVE PUBLIC RECIPE DISCOVERY ───────────────────────────────────
+let liveRecipes = [];
+
+async function loadPublicRecipes() {
+  const grid = document.getElementById('rgrid');
+  if (!grid) return;
+  grid.innerHTML = '<div class="recipe-loading">Loading recipes from the community…</div>';
+
+  const { data, error } = await sb.from('recipes')
+    .select('id,author_id,title,description,image_url,cuisine,category,difficulty,prep_minutes,cook_minutes,servings,tags,created_at')
+    .eq('is_published', true)
+    .order('created_at', { ascending: false })
+    .limit(60);
+
+  if (error) {
+    console.error('Public recipe loading failed:', error);
+    grid.innerHTML = '<div class="recipe-loading">Recipes are temporarily unavailable. Please refresh to try again.</div>';
+    document.getElementById('noresults').style.display = 'none';
+    return;
+  }
+
+  const authorIds = [...new Set((data || []).map(recipe => recipe.author_id).filter(Boolean))];
+  let authors = [];
+  if (authorIds.length) {
+    const { data: profiles, error: profileError } = await sb.from('profiles')
+      .select('id,full_name,display_name')
+      .in('id', authorIds);
+    if (!profileError) authors = profiles || [];
+  }
+  const authorMap = new Map(authors.map(profile => [
+    profile.id,
+    profile.display_name || profile.full_name || 'Community chef'
+  ]));
+
+  liveRecipes = (data || []).map(recipe => ({
+    ...recipe,
+    chef: authorMap.get(recipe.author_id) || 'Community chef',
+    tags: Array.isArray(recipe.tags) ? recipe.tags : []
+  }));
+  filterrecipes();
+}
+
+function filterrecipes() {
+  const search = (document.getElementById('rsearch')?.value || '').trim().toLowerCase();
+  const cuisineFilter = typeof activeTag === 'undefined' ? 'all' : activeTag;
+  const filtered = liveRecipes.filter(recipe => {
+    const cuisine = (recipe.cuisine || '').toLowerCase();
+    const matchesCuisine = cuisineFilter === 'all' || cuisine === cuisineFilter;
+    const searchable = [
+      recipe.title, recipe.chef, recipe.description, recipe.cuisine,
+      recipe.category, ...(recipe.tags || [])
+    ].join(' ').toLowerCase();
+    return matchesCuisine && (!search || searchable.includes(search));
+  });
+
+  const grid = document.getElementById('rgrid');
+  const none = document.getElementById('noresults');
+  if (!grid || !none) return;
+  if (!filtered.length) {
+    grid.innerHTML = '';
+    none.textContent = liveRecipes.length
+      ? 'No recipes match your search. Try another cuisine or keyword.'
+      : 'No published community recipes yet. Be among the first to share a dish.';
+    none.style.display = '';
+    return;
+  }
+
+  none.style.display = 'none';
+  grid.innerHTML = filtered.map(recipe => {
+    const minutes = (Number(recipe.prep_minutes) || 0) + (Number(recipe.cook_minutes) || 0);
+    const time = minutes > 0 ? (minutes >= 60 ? Math.floor(minutes / 60) + ' hr ' + (minutes % 60 ? minutes % 60 + ' min' : '') : minutes + ' min') : 'Time not listed';
+    const imageUrl = typeof recipe.image_url === 'string' && /^https:\/\//i.test(recipe.image_url)
+      ? recipe.image_url : '';
+    const image = imageUrl
+      ? '<img class="rcard-photo" src="' + escHTML(imageUrl) + '" alt="' + escHTML(recipe.title) + '" loading="lazy" onerror="this.remove()">'
+      : '<span class="rcard-placeholder">🍽️</span>';
+    const tags = (recipe.tags || []).slice(0, 4)
+      .map(tag => '<span class="rtchip">' + escHTML(tag) + '</span>').join('');
+    return '<article class="rcard"><div class="rcard-img">' + image +
+      '<span class="rbadge">' + escHTML(recipe.difficulty || recipe.cuisine || 'Community recipe') + '</span></div>' +
+      '<div class="rcard-body"><div class="rcard-title">' + escHTML(recipe.title) + '</div>' +
+      '<div class="rcard-chef">by ' + escHTML(recipe.chef) + '</div>' +
+      '<div class="rcard-meta"><span>⏱ ' + escHTML(time) + '</span>' +
+      (recipe.servings ? '<span> · Serves ' + Number(recipe.servings) + '</span>' : '') + '</div>' +
+      (recipe.description ? '<p class="rcard-description">' + escHTML(recipe.description) + '</p>' : '') +
+      '<div class="rcard-tags">' + tags + '</div></div></article>';
+  }).join('');
 }
 
 // ── CHECKOUT + NEWSLETTER ───────────────────────────────────────────
