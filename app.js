@@ -350,6 +350,11 @@ function openRecipeComposer() {
     toast('Sign in or create an account to publish a recipe.');
     return;
   }
+  editingRecipeId = null;
+  document.getElementById('recipe-form').reset();
+  document.getElementById('recipe-form-title').textContent = 'Share a dish with the world';
+  document.getElementById('recipe-submit').textContent = 'Publish recipe';
+  showRecipePhotoPreview('');
   document.getElementById('recipe-modal').classList.add('op');
 }
 function closeRecipeComposer() {
@@ -416,6 +421,7 @@ function closeRecipeComposer() {
 
 async function submitRecipe(event) {
   event.preventDefault();
+  const wasEditing = Boolean(editingRecipeId);
   if (!STATE.currentUser) {
     closeRecipeComposer();
     openAuth('login');
@@ -509,7 +515,7 @@ async function submitRecipe(event) {
   closeRecipeComposer();
   await loadPublicRecipes();
   await loadPlatformStats();
-  toast(editingRecipeId ? 'Your recipe has been updated.' : 'Your recipe is now published.', 'success');
+  toast(wasEditing ? 'Your recipe has been updated.' : 'Your recipe is now published.', 'success');
 }
 // ── LIVE PLATFORM METRICS ──────────────────────────────────────────
 async function loadPlatformStats() {
