@@ -493,6 +493,13 @@ input,textarea,select{font-family:var(--body);}
 .profile-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}
 .mobile-profile-link{width:100%;text-align:left;padding:12px 14px;border-radius:8px;background:var(--sky);color:var(--navy);font-weight:700;margin:5px 0 12px;}
 @media(max-width:520px){.profile-card{padding:22px 18px;}.profile-form-grid{grid-template-columns:1fr;}.profile-wide{grid-column:auto;}.profile-actions .btn{padding:11px 16px;}}
+
+.rcard-img{position:relative;overflow:hidden;}
+.rcard-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.rcard-placeholder{display:flex;width:100%;height:100%;align-items:center;justify-content:center;font-size:48px;}
+.rcard-img .rbadge{position:absolute;z-index:2;}
+.rcard-description{font-size:12px;line-height:1.5;color:var(--muted);margin:9px 0 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.recipe-loading{grid-column:1/-1;text-align:center;padding:40px 16px;color:var(--muted);}
 </style>
 </head>
 <body>
