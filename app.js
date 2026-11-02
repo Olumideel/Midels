@@ -12,6 +12,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ── State ──────────────────────────────────────────────────────────
 const STATE = {
   currentUser: null,      // { id, name, role, emoji, color, ... } from profiles table
+  isPlatformAdmin: false, // independent platform permission, not a public profile role
   profiles: [],           // all other users, loaded from DB
   activeChatUserId: null,
   activeConversationId: null,
@@ -213,16 +214,31 @@ async function logoutUser() {
   await sb.auth.signOut();
   if (STATE.messageChannel) sb.removeChannel(STATE.messageChannel);
   STATE.currentUser = null;
+  STATE.isPlatformAdmin = false;
   STATE.activeChatUserId = null;
   closeChat(); closeChatList(); closeFriendsPanel();
   onLoggedOutUI();
   toast('You have been logged out.', '');
 }
 
+
+async function refreshPlatformAdminAccess() {
+  STATE.isPlatformAdmin = false;
+  if (!STATE.currentUser?.id) { syncAdminNavigation(); return; }
+  try {
+    const { data, error } = await sb.rpc('current_user_is_platform_admin');
+    if (error) throw error;
+    STATE.isPlatformAdmin = data === true;
+  } catch (error) {
+    console.error('Unable to check platform administrator access:', error);
+  }
+  syncAdminNavigation();
+}
+
 function syncAdminNavigation() {
   const button = document.getElementById('nav-admin-btn');
   const panel = document.getElementById('admin-console');
-  const isAdmin = STATE.currentUser?.role === 'admin' && STATE.currentUser?.account_status === 'active';
+  const isAdmin = STATE.isPlatformAdmin === true;
   if (button) button.style.display = isAdmin ? 'inline-flex' : 'none';
   if (!isAdmin && panel) panel.style.display = 'none';
 }
@@ -237,6 +253,7 @@ function onLoggedOutUI() {
 }
 
 async function onLogin() {
+  await refreshPlatformAdminAccess();
   syncAdminNavigation();
   document.getElementById('nav-social-icons').style.display = 'flex';
   document.getElementById('mobile-profile-link').style.display = 'block';
@@ -324,7 +341,7 @@ async function reportCommunityContent(targetType, targetId) {
   }
 }
 async function openAdminConsole() {
-  if (STATE.currentUser?.role !== 'admin' || STATE.currentUser?.account_status !== 'active') { toast('Administrator access required.', 'error'); return; }
+  if (!STATE.isPlatformAdmin) { toast('Administrator access required.', 'error'); return; }
   const panel = document.getElementById('admin-console');
   if (!panel) return;
   panel.style.display = 'block';
@@ -332,7 +349,7 @@ async function openAdminConsole() {
   await loadAdminReports();
 }
 async function loadAdminReports() {
-  if (STATE.currentUser?.role !== 'admin') return;
+  if (!STATE.isPlatformAdmin) return;
   const status = document.getElementById('admin-report-status')?.value || 'open';
   const list = document.getElementById('admin-report-list');
   if (!list) return;
@@ -359,7 +376,7 @@ async function loadAdminReports() {
   }).join('');
 }
 async function updateAdminReport(reportId, status) {
-  if (STATE.currentUser?.role !== 'admin') return;
+  if (!STATE.isPlatformAdmin) return;
   const { data, error } = await sb.rpc('admin_update_content_report', { p_report_id: reportId, p_status: status });
   if (error || data !== true) { console.error('Report update failed:', error); toast('The report status could not be updated.', 'error'); return; }
   toast('Report status updated.', 'success');
