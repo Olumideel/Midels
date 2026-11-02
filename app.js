@@ -101,7 +101,7 @@ async function signupUser() {
   const pass  = document.getElementById('auth-spassword').value;
 
   if (!fname || !email || !pass) { toast('Please fill in required fields', 'error'); return; }
-  if (pass.length < 6) { toast('Password must be at least 6 characters', 'error'); return; }
+  if (pass.length < 12 || !/[a-z]/.test(pass) || !/[A-Z]/.test(pass) || !/\\d/.test(pass) || !/[^A-Za-z0-9]/.test(pass)) { toast('Use at least 12 characters with uppercase, lowercase, a number and a symbol.', 'error'); return; }
 
   const { data, error } = await sb.auth.signUp({
     email,
@@ -181,8 +181,8 @@ function showPasswordRecoveryForm() {
 async function updateRecoveredPassword() {
   const password = document.getElementById('auth-new-password').value;
   const confirm = document.getElementById('auth-confirm-password').value;
-  if (!password || password.length < 6) {
-    toast('Your new password must be at least 6 characters.', 'error');
+  if (!password || password.length < 12 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+    toast('Use at least 12 characters with uppercase, lowercase, a number and a symbol.', 'error');
     return;
   }
   if (password !== confirm) {
