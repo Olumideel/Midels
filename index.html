@@ -836,6 +836,13 @@ input,textarea,select{font-family:var(--body);}
   </div>
 </section>
 
+<div class="profile-modal" id="public-profile-modal" onclick="if(event.target===this)closePublicProfile()">
+  <div class="profile-card">
+    <button class="profile-close" type="button" onclick="closePublicProfile()" aria-label="Close">×</button>
+    <div id="public-profile-content"></div>
+  </div>
+</div>
+
 <div class="profile-modal" id="recipe-modal" onclick="if(event.target===this)closeRecipeComposer()">
   <div class="profile-card">
     <button class="profile-close" type="button" onclick="closeRecipeComposer()" aria-label="Close">×</button>
