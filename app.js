@@ -525,7 +525,6 @@ async function renderChatList() {
 }
 
 // ── FRIENDS PANEL (real DB) ─────────────────────────────────────────
- ───────────────────────────────────────────
 async function toggleFriendsPanel(tab) {
   const panel = document.getElementById('friends-panel');
   const isOpen = panel.classList.contains('op');
