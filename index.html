@@ -448,6 +448,26 @@ input,textarea,select{font-family:var(--body);}
 @media(max-width:960px){.ag{grid-template-columns:1fr;gap:48px;}.aimg{order:-1;max-width:440px;margin:0 auto;}.sh{grid-template-columns:1fr;gap:16px;}.pgrid,.bgrid,.rgrid,.chef-grid{grid-template-columns:1fr 1fr;}.tgrid{grid-template-columns:1fr 1fr;}.plangrid{grid-template-columns:1fr;max-width:420px;margin:0 auto;}.faq2{grid-template-columns:1fr;gap:48px;}.cgrid{grid-template-columns:1fr;gap:48px;}.fgrid{grid-template-columns:1fr 1fr;}}
 @media(max-width:720px){.nlinks,.ncta,.nav-social-icons{display:none;}.ham{display:flex;}.sg{grid-template-columns:1fr;}.pgrid,.bgrid,.rgrid,.tgrid,.chef-grid{grid-template-columns:1fr;}.frow{grid-template-columns:1fr;}.fgrid{grid-template-columns:1fr;}.fbot{flex-direction:column;text-align:center;}.hstats{gap:24px;}.bhead{flex-direction:column;align-items:flex-start;}#friends-panel,#chat-panel,#chat-list-panel{right:12px;left:12px;width:auto;}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+
+.profile-modal{display:none;position:fixed;inset:0;z-index:2200;background:rgba(13,25,45,.62);padding:20px;align-items:center;justify-content:center;overflow-y:auto;}
+.profile-modal.op{display:flex;}
+.profile-card{position:relative;background:#fff;width:min(680px,100%);max-height:92vh;overflow-y:auto;border-radius:20px;padding:30px;box-shadow:0 20px 70px rgba(0,0,0,.25);}
+.profile-close{position:absolute;right:18px;top:16px;font-size:22px;color:var(--muted);padding:6px;}
+.profile-heading{display:flex;align-items:center;gap:16px;padding:8px 34px 22px 0;border-bottom:1px solid var(--border);margin-bottom:22px;}
+.profile-avatar{width:62px;height:62px;border-radius:50%;background:var(--sky);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;flex-shrink:0;}
+.profile-avatar img{width:100%;height:100%;object-fit:cover;}
+.profile-kicker{font-size:10px;letter-spacing:.15em;font-weight:700;color:var(--bl);margin-bottom:5px;}
+.profile-heading h2{font:26px var(--display);color:var(--navy);}
+.profile-heading p{font-size:13px;color:var(--muted);overflow-wrap:anywhere;margin-top:4px;}
+.profile-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.profile-form-grid label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:var(--navy);}
+.profile-form-grid input,.profile-form-grid textarea{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:8px;font:14px var(--body);color:var(--navy);background:#fff;min-width:0;}
+.profile-form-grid input:focus,.profile-form-grid textarea:focus{outline:2px solid rgba(44,82,130,.18);border-color:var(--blue);}
+.profile-form-grid input[readonly]{background:var(--ice);color:var(--muted);}
+.profile-wide{grid-column:1/-1;}
+.profile-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}
+.mobile-profile-link{width:100%;text-align:left;padding:12px 14px;border-radius:8px;background:var(--sky);color:var(--navy);font-weight:700;margin:5px 0 12px;}
+@media(max-width:520px){.profile-card{padding:22px 18px;}.profile-form-grid{grid-template-columns:1fr;}.profile-wide{grid-column:auto;}.profile-actions .btn{padding:11px 16px;}}
 </style>
 </head>
 <body>
@@ -470,6 +490,7 @@ input,textarea,select{font-family:var(--body);}
         <button class="nav-icon-btn" onclick="toggleFriendsPanel('requests')" title="Friend Requests">👥<span class="nav-badge hidden" id="req-badge">0</span></button>
         <button class="nav-icon-btn" onclick="toggleChatList()" title="Messages">💬<span class="nav-badge hidden" id="msg-badge"></span></button>
         <button class="nav-icon-btn" onclick="toggleFriendsPanel('following')" title="Following">❤️</button>
+        <button class="nav-icon-btn" id="nav-profile-btn" onclick="openMyProfile()" title="My Profile" aria-label="My Profile">👤</button>
       </div>
       <div class="ncta">
         <button class="nlogin" id="nav-login-btn" onclick="openAuth('login')">log in</button>
@@ -479,6 +500,7 @@ input,textarea,select{font-family:var(--body);}
       <button class="ham" id="ham"><span></span><span></span><span></span></button>
     </div>
     <div id="mm">
+      <button class="mobile-profile-link" id="mobile-profile-link" style="display:none;" onclick="openMyProfile();cmm()">👤 My profile</button>
       <a href="#about" onclick="cmm()">about</a>
       <a href="#services" onclick="cmm()">services</a>
       <a href="#community" onclick="cmm()">community</a>
@@ -565,6 +587,30 @@ input,textarea,select{font-family:var(--body);}
   </div>
 </div>
 
+<div id="profile-modal" class="profile-modal" onclick="if(event.target===this)closeMyProfile()">
+  <section class="profile-card" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+    <button class="profile-close" onclick="closeMyProfile()" aria-label="Close profile">✕</button>
+    <div class="profile-heading">
+      <div class="profile-avatar" id="profile-avatar">👤</div>
+      <div><div class="profile-kicker">YOUR ACCOUNT</div><h2 id="profile-modal-title">My profile</h2><p id="profile-email-display"></p></div>
+    </div>
+    <form id="profile-edit-form" onsubmit="saveMyProfile(event)">
+      <div class="profile-form-grid">
+        <label>Full name<input id="profile-full-name" maxlength="120" required /></label>
+        <label>Display name<input id="profile-display-name" maxlength="120" /></label>
+        <label>Username<input id="profile-username" minlength="3" maxlength="30" /></label>
+        <label>Account type<input id="profile-role" readonly /></label>
+        <label>City<input id="profile-city" maxlength="100" /></label>
+        <label>Country code<input id="profile-country" maxlength="2" placeholder="e.g. NG" /></label>
+        <label class="profile-wide">Bio<textarea id="profile-bio" maxlength="1000" rows="3"></textarea></label>
+        <label class="profile-wide">Profile photo URL<input id="profile-avatar-url" type="url" placeholder="https://…" /></label>
+        <label>Website<input id="profile-website" type="url" /></label>
+        <label>Instagram URL<input id="profile-instagram" type="url" /></label>
+      </div>
+      <div class="profile-actions"><button type="button" class="btn bo" onclick="closeMyProfile()">Close</button><button type="submit" class="btn bp" id="profile-save-btn">Save changes</button></div>
+    </form>
+  </section>
+</div>
 <div id="toast-container"></div>
 
 <section id="hero">
