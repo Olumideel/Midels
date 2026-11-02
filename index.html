@@ -999,10 +999,10 @@ input,textarea,select{font-family:var(--body);}
         <div class="pper" id="pp-pro">per month · billed monthly</div>
         <p class="pdesc">for educators who want additional creator tools. Checkout is in test mode while payment and settlement flows are validated.</p>
         <div class="pfeats">
-          <div class="pf y">everything in starter</div><div class="pf y">unlimited courses &amp; recipes</div>
+          <div class="pf y">everything in starter</div><div class="pf y">course and recipe publishing</div>
           <div class="pf y">live class hosting (in development)</div><div class="pf y">digital storefront (NGN test checkout)</div>
           <div class="pf y">verified certificates</div><div class="pf y">advanced analytics (in development)</div>
-          <div class="pf y">multilingual tools (planned)</div><div class="pf n">white-label school subdomain</div>
+          <div class="pf y">multilingual tools (planned)</div><div class="pf n">school subdomain (planned)</div>
         </div>
         <button class="planbtn fill" onclick="startPlanCheckout('pro', this)">upgrade to pro →</button>
       </div>
@@ -1010,14 +1010,14 @@ input,textarea,select{font-family:var(--body);}
         <div class="ptier">culinary school</div>
         <div class="prow"><span class="pcur">₦</span><span class="pamt pv" data-mo="29900" data-yr="20930">29,900</span></div>
         <div class="pper" id="pp-school">per month · billed monthly</div>
-        <p class="pdesc">full infrastructure for schools, food brands, and high-volume educators.</p>
+        <p class="pdesc">for culinary schools planning structured online learning. School-specific tools are in development.</p>
         <div class="pfeats">
-          <div class="pf y">everything in pro</div><div class="pf y">white-label school subdomain</div>
-          <div class="pf y">live class hosting (planned)</div><div class="pf y">expanded archive tools (planned)</div>
-          <div class="pf y">priority discovery (planned)</div><div class="pf y">dedicated support (planned)</div>
-          <div class="pf y">API integrations (planned)</div>
+          <div class="pf y">everything in pro</div><div class="pf n">school subdomain (planned)</div>
+          <div class="pf n">live class hosting (planned)</div><div class="pf n">expanded archive tools (planned)</div>
+          <div class="pf n">priority discovery (planned)</div><div class="pf n">dedicated support (planned)</div>
+          <div class="pf n">API integrations (planned)</div>
         </div>
-        <button class="planbtn ghost" onclick="startPlanCheckout('school', this)">upgrade to school</button>
+        <button class="planbtn ghost" type="button" disabled>school plan · coming soon</button>
       </div>
     </div>
     <p style="text-align:center;font-size:13px;color:var(--muted);margin-top:28px;">🔒 Paystack test checkout · NGN only · no live customer charges during validation</p><p style="text-align:center;font-size:12px;color:var(--muted);margin-top:8px;">Annual prices are paid once per year at the displayed discounted monthly equivalent. Plans are prepaid for the selected period; renewal is manual until recurring billing is introduced.</p>
@@ -1037,8 +1037,8 @@ input,textarea,select{font-family:var(--body);}
         <div class="faqlist">
           <div class="faqitem"><button class="faqq" onclick="togfaq(this)">is there really zero commission on sales?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">Global Culinary Hub does not currently add a platform sales commission. Paystack processing fees may apply. Seller payout routing is not yet automated, so creator sales are restricted to test mode until settlement arrangements are completed.</div></div></div>
           <div class="faqitem"><button class="faqq" onclick="togfaq(this)">how does paystack handle my payment?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">Payments are processed by Paystack. Checkout is currently restricted to NGN test transactions while seller settlement is being configured. International card acceptance and currency options depend on Paystack account approval and are not yet enabled in this release.</div></div></div>
-          <div class="faqitem"><button class="faqq" onclick="togfaq(this)">can i cancel or switch plans any time?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">yes. cancel from your dashboard with no fees. you keep access until the end of your billing period. upgrades take effect immediately; downgrades at the next billing date.</div></div></div>
-          <div class="faqitem"><button class="faqq" onclick="togfaq(this)">what languages does the platform support?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">the dashboard is available in 12 languages. our subtitle engine auto-translates video content into 40 languages on pro and school plans.</div></div></div>
+          <div class="faqitem"><button class="faqq" onclick="togfaq(this)">can i cancel or switch plans any time?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">Subscription changes and cancellation controls are being finalised. Contact support before purchasing if you need a change or cancellation.</div></div></div>
+          <div class="faqitem"><button class="faqq" onclick="togfaq(this)">what languages does the platform support?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">The current interface is primarily English. Multilingual interface and subtitle features are planned, but are not yet available.</div></div></div>
           <div class="faqitem"><button class="faqq" onclick="togfaq(this)">how quickly do i get paid?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">Automated creator payouts are not yet available. Sales settlement and seller payout routing must be configured and verified before live creator transactions are enabled.</div></div></div>
           <div class="faqitem"><button class="faqq" onclick="togfaq(this)">how do i connect with other chefs on the hub?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">visit the community section to follow chefs, send friend requests, and message anyone directly. all plans include community features. your connections feed, friend requests, and messages are accessible from the icons in the top navigation bar after signing in.</div></div></div>
         </div>
@@ -1053,12 +1053,12 @@ input,textarea,select{font-family:var(--body);}
       <div class="rv">
         <span class="lbl">get in touch</span>
         <h2 class="h2">let's bring your culinary vision online</h2>
-        <p class="sub" style="max-width:100%">whether you're a solo chef or a culinary school with 500 students, we'll find the right plan and set you up in under 24 hours.</p>
+        <p class="sub" style="max-width:100%">Whether you're an individual chef, educator, food business or culinary school, tell us what you need and we'll explain the features currently available.</p>
         <div class="cmethods">
           <div class="cmrow"><div class="cmicon">📧</div><div><div class="cmlbl">email us</div><div class="cmval">midels.culinaryhub@gmail.com</div></div></div>
           <div class="cmrow"><div class="cmicon">📞</div><div><div class="cmlbl">call us</div><div class="cmval">09067306804</div></div></div>
           <div class="cmrow"><div class="cmicon">💬</div><div><div class="cmlbl">direct message</div><div class="cmval">sign in and message us from the community</div></div></div>
-          <div class="cmrow"><div class="cmicon">⏱</div><div><div class="cmlbl">response time</div><div class="cmval">under 2 hours on weekdays</div></div></div>
+          <div class="cmrow"><div class="cmicon">⏱</div><div><div class="cmlbl">response time</div><div class="cmval">we aim to respond as soon as possible</div></div></div>
         </div>
       </div>
       <div class="rv d1">
