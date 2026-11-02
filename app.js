@@ -311,6 +311,14 @@ function getUser(id) {
   return STATE.profiles.find(u => u.id === id) || {};
 }
 
+function avatarMarkup(profile, className, extraMarkup = '') {
+  const user = profile || {};
+  const fallback = escHTML(user.emoji || '👤');
+  const imageUrl = typeof user.avatar_url === 'string' && user.avatar_url.startsWith('https://') ? user.avatar_url : '';
+  const image = imageUrl ? '<img src="' + escHTML(imageUrl) + '" alt="' + escHTML((user.name || user.full_name || 'Profile') + ' photo') + '" loading="lazy" onerror="this.remove()">' : '';
+  return '<div class="' + className + '" style="background:' + escHTML(user.color || '#2c5282') + '"><span class="avatar-fallback">' + fallback + '</span>' + image + extraMarkup + '</div>';
+}
+
 // ── REAL-TIME CHAT (persisted + live) ────────────────────────────────
 async function openChat(userId) {
   if (!STATE.currentUser) { openAuth('signup'); return; }
@@ -318,7 +326,7 @@ async function openChat(userId) {
   STATE.activeChatUserId = userId;
 
   document.getElementById('chat-with-name').textContent = user.name;
-  document.getElementById('chat-av-icon').innerHTML = (user.emoji || '👤') + `<div class="chat-online-dot"></div>`;
+  document.getElementById('chat-av-icon').outerHTML = avatarMarkup(user, 'chat-head-av', '<div class="chat-online-dot"></div>').replace('class="chat-head-av"', 'class="chat-head-av" id="chat-av-icon"');
 
   await loadAndRenderMessages(userId);
 
@@ -439,7 +447,7 @@ async function renderChatList() {
   body.innerHTML = [...seen.entries()].map(([uid, c]) => {
     const u = getUser(uid);
     return `<div class="conv-item" onclick="openChat('${uid}')">
-      <div class="conv-av" style="background:${u.color || '#2c5282'}">${u.emoji || '👤'}</div>
+      ${avatarMarkup(u, 'conv-av')}
       <div class="conv-info">
         <div class="conv-name">${escHTML(u.name || 'Unknown')}</div>
         <div class="conv-preview">${escHTML(c.preview)}</div>
@@ -486,7 +494,7 @@ async function renderFriendsPanel() {
     body.innerHTML = data.map(r => {
       const u = getUser(r.sender_id);
       return `<div class="friend-req">
-        <div class="freq-av" style="background:${u.color||'#2c5282'}">${u.emoji||'👤'}</div>
+        ${avatarMarkup(u, 'freq-av')}
         <div class="freq-info">
           <div class="freq-name">${escHTML(u.name||'Unknown')}</div>
           <div class="freq-meta">${u.role||''} · ${u.location||''}</div>
@@ -503,7 +511,7 @@ async function renderFriendsPanel() {
     body.innerHTML = data.map(r => {
       const u = getUser(r.receiver_id);
       return `<div class="friend-req">
-        <div class="freq-av" style="background:${u.color||'#2c5282'}">${u.emoji||'👤'}</div>
+        ${avatarMarkup(u, 'freq-av')}
         <div class="freq-info">
           <div class="freq-name">${escHTML(u.name||'Unknown')}</div>
           <div class="freq-meta">${u.role||''} · ${u.location||''}</div>
@@ -524,7 +532,7 @@ async function renderFollowingPanel() {
   body.innerHTML = [...followingIds].map(uid => {
     const u = getUser(uid);
     return `<div class="following-item">
-      <div class="fi-av" style="background:${u.color||'#2c5282'}">${u.emoji||'👤'}</div>
+      ${avatarMarkup(u, 'fi-av')}
       <div class="fi-info">
         <div class="fi-name">${escHTML(u.name||'Unknown')}</div>
         <div class="fi-role">${u.role||''} · ${u.location||''}</div>
@@ -617,7 +625,7 @@ async function renderChefGrid(profiles) {
 
     return `<div class="chef-card">
       <div class="chef-card-top">
-        <div class="chef-avatar" style="background:${u.color || '#2c5282'}">${u.emoji || '👤'}</div>
+        ${avatarMarkup(u, 'chef-avatar')}
         <div class="chef-info">
           <div class="chef-name">${escHTML(u.name)}</div>
           <div class="chef-role">${(u.role||'').replace('-', ' ')}</div>
