@@ -234,6 +234,25 @@ input,textarea,select{font-family:var(--body);}
 .rcard-img span.rbadge{position:absolute;top:10px;right:10px;background:var(--blue);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;}
 .rcard-body{padding:20px;}
 .rcard-title{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:6px;}
+.rcard-clickable{cursor:pointer;transition:transform .2s ease,box-shadow .2s ease;}
+.rcard-clickable:hover,.rcard-clickable:focus-visible{transform:translateY(-3px);box-shadow:var(--sh);outline:2px solid var(--blue);outline-offset:2px;}
+.rcard-photo{width:100%;height:100%;object-fit:cover;display:block;}
+.rcard-open-hint{margin-top:14px;color:var(--blue);font-size:12px;font-weight:700;}
+.recipe-detail-card{max-width:760px;width:min(94vw,760px);max-height:90vh;overflow-y:auto;padding:0;}
+.recipe-detail-photo{width:100%;height:280px;object-fit:cover;display:block;border-radius:var(--rl) var(--rl) 0 0;}
+.recipe-detail-photo-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:var(--sky);font-size:54px;color:var(--muted);}
+.recipe-detail-photo-empty span{font-size:13px;}
+.recipe-detail-inner{padding:28px;}
+.recipe-detail-inner h2{font-size:26px;color:var(--navy);margin:8px 0 14px;}
+.recipe-detail-inner h3{font-size:18px;color:var(--navy);margin:24px 0 10px;}
+.recipe-detail-author{margin:0 0 16px;}
+.recipe-detail-stats{display:flex;flex-wrap:wrap;gap:8px 14px;padding:12px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);}
+.recipe-detail-description{line-height:1.7;color:var(--muted);margin-top:16px;}
+.recipe-ingredient-list,.recipe-instruction-list{padding-left:22px;line-height:1.8;color:var(--text);}
+.recipe-instruction-list{list-style:none;padding:0;display:grid;gap:12px;}
+.recipe-instruction-list li{display:flex;gap:10px;align-items:flex-start;}
+.recipe-step-number{width:25px;height:25px;min-width:25px;border-radius:50%;background:var(--sky);color:var(--blue);font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-size:12px;}
+@media(max-width:600px){.recipe-detail-photo{height:210px;}.recipe-detail-inner{padding:20px;}.recipe-detail-inner h2{font-size:22px;}}
 .rcard-author{display:flex;align-items:center;gap:9px;margin:2px 0 10px;min-height:30px;}
 .rcard-author-avatar{width:30px;height:30px;min-width:30px;border-radius:50%;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;font-size:15px;border:1px solid var(--border);}
 .rcard-author-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:1;}
@@ -845,6 +864,13 @@ input,textarea,select{font-family:var(--body);}
   <div class="profile-card">
     <button class="profile-close" type="button" onclick="closePublicProfile()" aria-label="Close">×</button>
     <div id="public-profile-content"></div>
+  </div>
+</div>
+
+<div class="profile-modal recipe-detail-modal" id="recipe-detail-modal" onclick="if(event.target===this)closeRecipeDetail()">
+  <div class="profile-card recipe-detail-card" role="dialog" aria-modal="true" aria-label="Full recipe details">
+    <button class="profile-close" type="button" onclick="closeRecipeDetail()" aria-label="Close recipe">×</button>
+    <div id="recipe-detail-content"></div>
   </div>
 </div>
 
