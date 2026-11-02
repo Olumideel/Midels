@@ -670,6 +670,15 @@ input,textarea,select{font-family:var(--body);}
         <label>Instagram URL<input id="profile-instagram" type="url" /></label>
       </div>
       <div class="profile-actions"><button type="button" class="btn bo" onclick="closeMyProfile()">Close</button><button type="submit" class="btn bp" id="profile-save-btn">Save changes</button></div>
+      <div style="border-top:1px solid var(--border);margin-top:22px;padding-top:18px;">
+        <strong>Privacy & account requests</strong>
+        <p style="font-size:13px;color:var(--muted);margin:6px 0 12px;">Request a copy of your personal data or request account deletion. Requests are reviewed manually; deletion is not immediate and may be subject to legal record-retention requirements.</p>
+        <div class="profile-actions" style="justify-content:flex-start;">
+          <button type="button" class="btn bo" onclick="submitPrivacyRequest('data_access')">Request data copy</button>
+          <button type="button" class="btn ghost" onclick="submitPrivacyRequest('data_deletion')">Request account deletion</button>
+        </div>
+        <p id="my-privacy-requests" style="white-space:pre-line;font-size:12px;color:var(--muted);margin-top:12px;">Your privacy request history will appear here.</p>
+      </div>
     </form>
   </section>
 </div>
@@ -981,6 +990,18 @@ input,textarea,select{font-family:var(--body);}
         </label><button class="btn bo" type="button" onclick="loadAdminReports()">Refresh queue</button>
       </div>
       <div id="admin-report-list" aria-live="polite"><p style="color:var(--muted);">Select the administration icon to load reports.</p></div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:24px;margin-top:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+        <div><strong>Privacy & account requests</strong><p style="font-size:13px;color:var(--muted);margin-top:4px;">Review member data-access and account-deletion requests.</p></div>
+        <label for="admin-privacy-status">Request queue
+          <select id="admin-privacy-status" onchange="loadAdminPrivacyRequests()" style="display:block;margin-top:6px;padding:10px;border:1px solid var(--border);border-radius:8px;">
+            <option value="open">Open</option><option value="reviewing">Reviewing</option><option value="fulfilled">Fulfilled</option><option value="rejected">Rejected</option><option value="all">All requests</option>
+          </select>
+        </label>
+        <button class="btn bo" type="button" onclick="loadAdminPrivacyRequests()">Refresh requests</button>
+      </div>
+      <div id="admin-privacy-list" aria-live="polite"><p style="color:var(--muted);">Privacy requests load when the administrator console opens.</p></div>
     </div>
   </div>
 </section>
