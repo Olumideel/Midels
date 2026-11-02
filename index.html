@@ -541,7 +541,7 @@ input,textarea,select{font-family:var(--body);}
         <a href="#services" class="nl">services</a>
         <a href="#community" class="nl">community</a>
         <a href="#portfolio" class="nl">portfolio</a>
-        <a href="#recipes" class="nl">recipes</a><a href="#learning" class="nl">school</a><a href="#learning" class="nl">school</a>
+        <a href="#recipes" class="nl">recipes</a><a href="#learning" class="nl">school</a><a href="#marketplace" class="nl">marketplace</a>
         <a href="#architecture" class="nl">tech</a>
         <a href="#pricing" class="nl">pricing</a>
         <a href="#contact" class="nl">contact</a>
@@ -565,7 +565,7 @@ input,textarea,select{font-family:var(--body);}
       <a href="#services" onclick="cmm()">services</a>
       <a href="#community" onclick="cmm()">community</a>
       <a href="#portfolio" onclick="cmm()">portfolio</a>
-      <a href="#recipes" onclick="cmm()">recipes</a><a href="#learning" onclick="cmm()">culinary school</a><a href="#learning" onclick="cmm()">culinary school</a>
+      <a href="#recipes" onclick="cmm()">recipes</a><a href="#learning" onclick="cmm()">culinary school</a><a href="#marketplace" onclick="cmm()">marketplace</a>
       <a href="#architecture" onclick="cmm()">tech</a>
       <a href="#pricing" onclick="cmm()">pricing</a>
       <a href="#contact" onclick="cmm()">contact</a>
@@ -944,7 +944,50 @@ input,textarea,select{font-family:var(--body);}
 <style>
 .learn-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:24px;margin-top:24px}.learn-panel{background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:22px;margin-bottom:14px}.learn-panel h3{font-size:18px;margin-bottom:14px}.learn-panel label{display:block;font-size:13px;font-weight:600;margin:10px 0}.learn-panel input,.learn-panel textarea{display:block;width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:5px;font:14px var(--body)}.learn-panel textarea{min-height:70px}.learn-course{padding:14px;border:1px solid var(--border);border-radius:10px;margin:12px 0}.learn-course h4{margin-bottom:6px}.learn-muted,.learn-meta{font-size:13px;color:var(--muted);line-height:1.6}.learn-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.learn-actions .btn{padding:8px 12px;font-size:13px}.learn-progress{height:7px;background:var(--sky);border-radius:9px;overflow:hidden}.learn-progress span{display:block;height:100%;background:var(--green)}.learn-lesson{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--border)}@media(max-width:800px){.learn-grid{grid-template-columns:1fr}}
 </style>
-<section id="certificate-verification" style="padding:56px 0;background:#fff"><div class="wrap"><div class="learn-panel"><h3>Verify a Culinary Hub certificate</h3><p class="learn-muted">Enter the certificate code to check its authenticity and current status.</p><div class="learn-actions"><input id="certificate-verify-code" maxlength="40" placeholder="GCH-XXXXXXXXXXXX" aria-label="Certificate code" style="flex:1;min-width:180px;padding:10px;border:1px solid var(--border);border-radius:8px"><button class="btn bp" type="button" onclick="verifyCourseCertificate()">Verify certificate</button></div><p id="certificate-verify-result" class="learn-muted" aria-live="polite" style="margin-top:12px"></p></div></div></section>\n<section id="pricing">
+<section id="certificate-verification" style="padding:56px 0;background:#fff"><div class="wrap"><div class="learn-panel"><h3>Verify a Culinary Hub certificate</h3><p class="learn-muted">Enter the certificate code to check its authenticity and current status.</p><div class="learn-actions"><input id="certificate-verify-code" maxlength="40" placeholder="GCH-XXXXXXXXXXXX" aria-label="Certificate code" style="flex:1;min-width:180px;padding:10px;border:1px solid var(--border);border-radius:8px"><button class="btn bp" type="button" onclick="verifyCourseCertificate()">Verify certificate</button></div><p id="certificate-verify-result" class="learn-muted" aria-live="polite" style="margin-top:12px"></p></div></div></section>\n
+<section id="marketplace" style="padding:76px 0;background:var(--ice)">
+ <div class="wrap">
+  <div class="learn-head"><span class="lbl">chef marketplace</span><h2 class="h2">A storefront for every culinary creator.</h2><p class="sub" style="margin:0 auto">Discover recipe books and downloadable culinary resources. Purchases are verified before private files become available.</p></div>
+  <div class="market-grid" id="marketplace-products"><p class="learn-muted">Loading digital products…</p></div>
+  <div class="market-workspace">
+   <div class="learn-panel">
+    <h3>Open your digital storefront</h3>
+    <p class="learn-muted">Publish a recipe book or downloadable resource. Uploads are private; buyers receive access only after verified payment.</p>
+    <form id="marketplace-product-form" class="market-form" onsubmit="createMarketplaceProduct(event)" style="display:none">
+     <label>Product title<input id="marketplace-product-title" maxlength="120" required placeholder="e.g. The Complete Nigerian Soups Guide"></label>
+     <label>Product type<select id="marketplace-product-type" required><option value="recipe_book">Recipe book</option><option value="digital_download">Digital download</option></select></label>
+     <label>Price (NGN)<input id="marketplace-product-price" type="number" min="1" step="1" required placeholder="5000"></label>
+     <label>Cover image URL (optional)<input id="marketplace-product-cover" type="url" placeholder="https://…"></label>
+     <label class="market-wide">Description<textarea id="marketplace-product-description" rows="3" maxlength="1200" placeholder="Describe what buyers will receive."></textarea></label>
+     <label class="market-wide">Digital file (PDF, ZIP, EPUB, DOCX, PPTX or XLSX; max 50 MB)<input id="marketplace-product-file" type="file" accept=".pdf,.zip,.epub,.docx,.pptx,.xlsx" required></label>
+     <div class="market-wide"><button class="btn bp" type="submit">Publish digital product</button></div>
+    </form>
+    <div id="marketplace-seller-products"><p class="learn-muted">Sign in to manage your storefront.</p></div>
+   </div>
+   <div class="learn-panel"><h3>My purchases</h3><p class="learn-muted">Your completed digital purchases are kept here.</p><div id="marketplace-library"><p class="learn-muted">Sign in to view your downloads.</p></div></div>
+  </div>
+  <p class="learn-muted" style="margin-top:16px">Current checkout currency: NGN. International currencies, seller payouts and consultation booking are not yet enabled in this release.</p>
+ </div>
+</section>
+<style>
+.market-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.market-product{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;min-width:0;display:flex;flex-direction:column;gap:8px}
+.market-product h4{font-size:17px;margin:0;color:var(--navy)}
+.market-product-type{font-size:10px;letter-spacing:1px;color:var(--muted);font-weight:800;margin-top:4px}
+.market-product-footer{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:8px}
+.market-product-footer strong{font-size:15px}
+.market-workspace{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;margin-top:28px}
+.market-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.market-form label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700}
+.market-form input,.market-form select,.market-form textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font:14px var(--body);background:#fff;color:var(--navy)}
+.market-wide{grid-column:1/-1}
+.market-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border);font-size:13px}
+.market-row small{color:var(--muted)}
+@media(max-width:800px){.market-grid{grid-template-columns:1fr 1fr}.market-workspace{grid-template-columns:1fr}}
+@media(max-width:520px){.market-grid{grid-template-columns:1fr}.market-form{grid-template-columns:1fr}.market-wide{grid-column:auto}}
+</style>
+
+<section id="pricing">
   <div class="wrap">
     <div class="pricehead rv">
       <span class="lbl">pricing</span>
@@ -1169,7 +1212,7 @@ ham.addEventListener('click',()=>{ham.classList.toggle('op');mm.classList.toggle
 function cmm(){ham.classList.remove('op');mm.classList.remove('op');}
 window.addEventListener('scroll',()=>{
   document.getElementById('nav').classList.toggle('sc',window.scrollY>10);
-  const secs=['hero','about','services','community','portfolio','recipes','learning','pricing','faq','contact'];
+  const secs=['hero','about','services','community','portfolio','recipes','learning','marketplace','pricing','faq','contact'];
   let cur='';secs.forEach(id=>{const e=document.getElementById(id);if(e&&window.scrollY>=e.offsetTop-120)cur=id;});
   document.querySelectorAll('.nlinks a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));
 },{passive:true});
