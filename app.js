@@ -856,6 +856,11 @@ async function startPlanCheckout(planCode, button) {
 async function subnl() {
   const input = document.getElementById('nlemail');
   const email = input?.value.trim();
+  const consent = document.getElementById('nl-consent');
+  if (!consent?.checked) {
+    toast('Please confirm that you want to receive email updates.', 'error');
+    return;
+  }
   if (!email) {
     toast('Enter your email address first.', 'error');
     return;
@@ -877,6 +882,7 @@ async function subnl() {
     });
     if (error || data?.error) throw error || new Error(data.error);
     input.value = '';
+    consent.checked = false;
     toast('You are subscribed to Global Culinary Hub updates.', 'success');
   } catch (error) {
     console.error('Newsletter signup failed:', error);
