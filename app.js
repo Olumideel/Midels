@@ -59,6 +59,7 @@ async function initBackend() {
   await loadAllProfiles();
   renderChefGrid(STATE.profiles);
   await loadPublicRecipes();
+  await loadPlatformStats();
 }
 
 async function loadCurrentProfile(userId) {
@@ -234,6 +235,7 @@ async function onLogin() {
   await updateBadges();
   renderChefGrid(STATE.profiles);
   await loadPublicRecipes();
+  await loadPlatformStats();
   subscribeToMessages();
   await handlePaymentReturn();
 }
@@ -270,6 +272,24 @@ async function handlePaymentReturn() {
     url.searchParams.delete('trxref');
     window.history.replaceState({}, '', url.toString());
   }
+}
+
+// ── LIVE PLATFORM METRICS ──────────────────────────────────────────
+async function loadPlatformStats() {
+  const [members, recipes, countries] = await Promise.all([
+    sb.from('profiles').select('id', { count: 'exact', head: true }).eq('account_status', 'active'),
+    sb.from('recipes').select('id', { count: 'exact', head: true }).eq('is_published', true),
+    sb.from('profiles').select('country_code').eq('account_status', 'active').not('country_code', 'is', null)
+  ]);
+  const setMetric = (id, value) => {
+    const node = document.getElementById(id);
+    if (node) node.textContent = Number.isFinite(value) ? value.toLocaleString() : '—';
+  };
+  setMetric('hub-members', members.error ? NaN : (members.count || 0));
+  setMetric('hub-recipes', recipes.error ? NaN : (recipes.count || 0));
+  const representedCountries = countries.error ? NaN
+    : new Set((countries.data || []).map(row => (row.country_code || '').trim().toUpperCase()).filter(Boolean)).size;
+  setMetric('hub-countries', representedCountries);
 }
 
 // ── LIVE PUBLIC RECIPE DISCOVERY ───────────────────────────────────
