@@ -219,7 +219,15 @@ async function logoutUser() {
   toast('You have been logged out.', '');
 }
 
+function syncAdminNavigation() {
+  const button = document.getElementById('nav-admin-btn');
+  const panel = document.getElementById('admin-console');
+  const isAdmin = STATE.currentUser?.role === 'admin' && STATE.currentUser?.account_status === 'active';
+  if (button) button.style.display = isAdmin ? 'inline-flex' : 'none';
+  if (!isAdmin && panel) panel.style.display = 'none';
+}
 function onLoggedOutUI() {
+  syncAdminNavigation();
   document.getElementById('nav-social-icons').style.display = 'none';
   document.getElementById('mobile-profile-link').style.display = 'none';
   document.getElementById('nav-login-btn').style.display = '';
@@ -229,6 +237,7 @@ function onLoggedOutUI() {
 }
 
 async function onLogin() {
+  syncAdminNavigation();
   document.getElementById('nav-social-icons').style.display = 'flex';
   document.getElementById('mobile-profile-link').style.display = 'block';
   document.getElementById('nav-login-btn').style.display = 'none';
@@ -287,6 +296,76 @@ async function handlePaymentReturn() {
   }
 }
 
+
+async function reportCommunityContent(targetType, targetId) {
+  if (!STATE.currentUser) { openAuth('login'); toast('Sign in before reporting content.'); return; }
+  if (!['recipe','profile'].includes(targetType) || !targetId) { toast('This item cannot be reported right now.', 'error'); return; }
+  const reason = window.prompt('Why are you reporting this? Enter one: Spam, Harassment, Hate or discrimination, Copyright, Unsafe or misleading, Other');
+  if (!reason || !reason.trim()) return;
+  const allowed = ['spam','harassment','hate or discrimination','copyright','unsafe or misleading','other'];
+  if (!allowed.includes(reason.trim().toLowerCase())) { toast('Please use one of the listed report reasons.', 'error'); return; }
+  const details = window.prompt('Add helpful context (optional, maximum 1000 characters):') || '';
+  if (details.length > 1000) { toast('Report details must be 1,000 characters or fewer.', 'error'); return; }
+  try {
+    const { data: existing, error: lookupError } = await sb.from('content_reports').select('id')
+      .eq('reporter_id', STATE.currentUser.id).eq('target_type', targetType).eq('target_id', targetId)
+      .in('status', ['open','reviewing']).limit(1);
+    if (lookupError) throw lookupError;
+    if (existing?.length) { toast('You already have an open report for this item.'); return; }
+    const { error } = await sb.from('content_reports').insert({
+      reporter_id: STATE.currentUser.id, target_type: targetType, target_id: targetId,
+      reason: reason.trim(), details: details.trim() || null
+    });
+    if (error) throw error;
+    toast('Report submitted. Thank you for helping keep the community safe.', 'success');
+  } catch (error) {
+    console.error('Report submission failed:', error);
+    toast('We could not submit this report. Please try again later.', 'error');
+  }
+}
+async function openAdminConsole() {
+  if (STATE.currentUser?.role !== 'admin' || STATE.currentUser?.account_status !== 'active') { toast('Administrator access required.', 'error'); return; }
+  const panel = document.getElementById('admin-console');
+  if (!panel) return;
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  await loadAdminReports();
+}
+async function loadAdminReports() {
+  if (STATE.currentUser?.role !== 'admin') return;
+  const status = document.getElementById('admin-report-status')?.value || 'open';
+  const list = document.getElementById('admin-report-list');
+  if (!list) return;
+  list.innerHTML = '<p style="color:var(--muted);padding:16px 0;">Loading reports…</p>';
+  const { data, error } = await sb.rpc('admin_list_content_reports', { p_status: status });
+  if (error) {
+    console.error('Admin report load failed:', error);
+    list.innerHTML = '<p style="color:var(--red);padding:16px 0;">Unable to load reports. Confirm administrator access and try again.</p>';
+    return;
+  }
+  if (!data?.length) { list.innerHTML = '<p style="color:var(--muted);padding:16px 0;">No reports in this queue.</p>'; return; }
+  list.innerHTML = data.map(report => {
+    const actions = report.status === 'open'
+      ? '<button class="btn bo" type="button" onclick="updateAdminReport(\'' + escHTML(report.id) + '\',\'reviewing\')">Mark reviewing</button>' : '';
+    const closeActions = ['resolved','dismissed'].includes(report.status) ? ''
+      : '<button class="btn bp" type="button" onclick="updateAdminReport(\'' + escHTML(report.id) + '\',\'resolved\')">Resolve</button><button class="btn ghost" type="button" onclick="updateAdminReport(\'' + escHTML(report.id) + '\',\'dismissed\')">Dismiss</button>';
+    return '<article style="padding:18px 0;border-bottom:1px solid var(--border);">' +
+      '<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;"><strong>' +
+      escHTML(report.target_type) + ' report · ' + escHTML(report.reason) + '</strong><span class="chef-chip">' + escHTML(report.status) + '</span></div>' +
+      '<p style="color:var(--muted);font-size:13px;margin:8px 0;">Reported by ' + escHTML(report.reporter_name || 'Member') + ' · ' + new Date(report.created_at).toLocaleString() + '</p>' +
+      (report.details ? '<p style="margin:8px 0;line-height:1.6;">' + escHTML(report.details) + '</p>' : '') +
+      '<p style="font-size:12px;color:var(--muted);word-break:break-all;">Target ID: ' + escHTML(report.target_id) + '</p>' +
+      '<div class="profile-actions" style="justify-content:flex-start;margin-top:12px;">' + actions + closeActions + '</div></article>';
+  }).join('');
+}
+async function updateAdminReport(reportId, status) {
+  if (STATE.currentUser?.role !== 'admin') return;
+  const { data, error } = await sb.rpc('admin_update_content_report', { p_report_id: reportId, p_status: status });
+  if (error || data !== true) { console.error('Report update failed:', error); toast('The report status could not be updated.', 'error'); return; }
+  toast('Report status updated.', 'success');
+  await loadAdminReports();
+}
+
 // ── PUBLIC CHEF / CREATOR PROFILES ────────────────────────────────
 function safeProfileLink(value) {
   if (typeof value !== 'string' || !value.trim()) return '';
@@ -325,6 +404,7 @@ async function openPublicProfile(userId) {
     '<div class="profile-actions" style="justify-content:flex-start;flex-wrap:wrap;">' +
       '<button class="btn bp" onclick="toggleFollow(\'' + escHTML(user.id) + '\')">Follow</button>' +
       '<button class="btn ghost" onclick="closePublicProfile();openChat(\'' + escHTML(user.id) + '\')">Message</button>' +
+      (STATE.currentUser && STATE.currentUser.id !== user.id ? '<button class="btn ghost" onclick="reportCommunityContent(\'profile\',\'' + escHTML(user.id) + '\')">Report profile</button>' : '') +
       (website ? '<a class="btn ghost" href="' + escHTML(website) + '" target="_blank" rel="noopener noreferrer">Website ↗</a>' : '') +
       (instagram ? '<a class="btn ghost" href="' + escHTML(instagram) + '" target="_blank" rel="noopener noreferrer">Instagram ↗</a>' : '') +
     '</div>' +
@@ -680,7 +760,11 @@ function openRecipeDetail(recipeId) {
     '<h3>Ingredients</h3><ul class="recipe-ingredient-list">' + (ingredients || '<li>Ingredients have not been added.</li>') + '</ul>' +
     '<h3>Preparation</h3><ol class="recipe-instruction-list">' + (instructions || '<li>Preparation steps have not been added.</li>') + '</ol>' +
     (Array.isArray(recipe.tags) && recipe.tags.length ? '<div class="rcard-tags">' + recipe.tags.map(tag => '<span class="rtchip">' + escHTML(tag) + '</span>').join('') + '</div>' : '') +
-    (STATE.currentUser && STATE.currentUser.id === recipe.author_id ? '<div class="profile-actions" style="margin-top:22px"><button class="btn bp" type="button" onclick="openRecipeEditor(\'' + escHTML(recipe.id) + '\')">Edit my recipe</button></div>' : '') +
+    (STATE.currentUser && STATE.currentUser.id === recipe.author_id
+      ? '<div class="profile-actions" style="margin-top:22px"><button class="btn bp" type="button" onclick="openRecipeEditor(\'' + escHTML(recipe.id) + '\')">Edit my recipe</button></div>'
+      : STATE.currentUser
+        ? '<div class="profile-actions" style="margin-top:22px"><button class="btn ghost" type="button" onclick="reportCommunityContent(\'recipe\',\'' + escHTML(recipe.id) + '\')">Report recipe</button></div>'
+        : '') +
     '</div>';
   modal.classList.add('op');
 }
