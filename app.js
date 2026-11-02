@@ -63,7 +63,6 @@ async function initBackend() {
   await loadPlatformStats();
   await loadLearningDashboard();
   await loadMarketplace();
-  await loadMarketplace();
 }
 
 async function loadCurrentProfile(userId) {
@@ -241,6 +240,7 @@ async function onLogin() {
   await loadPublicRecipes();
   await loadPlatformStats();
   await loadLearningDashboard();
+  await loadMarketplace();
   subscribeToMessages();
   await handlePaymentReturn();
 }
