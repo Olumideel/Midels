@@ -235,6 +235,83 @@ async function onLogin() {
   subscribeToMessages();
 }
 
+// ── CHECKOUT + NEWSLETTER ───────────────────────────────────────────
+let pendingPlanCheckout = null;
+
+async function startPlanCheckout(planCode, button) {
+  if (!['pro', 'school'].includes(planCode)) {
+    toast('Please choose a valid subscription plan.', 'error');
+    return;
+  }
+  if (!STATE.currentUser) {
+    pendingPlanCheckout = planCode;
+    openAuth('signup');
+    toast('Create your account or sign in, then choose your plan again.', 'success');
+    return;
+  }
+
+  const billingInterval = (typeof isAnnual !== 'undefined' && isAnnual) ? 'annual' : 'monthly';
+  const originalText = button ? button.textContent : '';
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Preparing secure checkout…';
+  }
+
+  try {
+    const { data, error } = await sb.functions.invoke('create-payment', {
+      body: { plan_code: planCode, billing_interval: billingInterval }
+    });
+    if (error) throw error;
+    if (!data?.authorization_url || !data.authorization_url.startsWith('https://')) {
+      throw new Error(data?.error || 'Secure checkout could not be opened.');
+    }
+    window.location.assign(data.authorization_url);
+  } catch (error) {
+    console.error('Checkout initialization failed:', error);
+    toast(error?.message || 'Unable to start checkout. Please try again.', 'error');
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+}
+
+async function subnl() {
+  const input = document.getElementById('nlemail');
+  const email = input?.value.trim();
+  if (!email) {
+    toast('Enter your email address first.', 'error');
+    return;
+  }
+  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+    toast('Enter a valid email address.', 'error');
+    return;
+  }
+
+  const button = input.parentElement.querySelector('button');
+  const originalText = button?.textContent || 'subscribe →';
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Subscribing…';
+  }
+  try {
+    const { data, error } = await sb.functions.invoke('newsletter-signup', {
+      body: { email, website: '' }
+    });
+    if (error || data?.error) throw error || new Error(data.error);
+    input.value = '';
+    toast('You are subscribed to Global Culinary Hub updates.', 'success');
+  } catch (error) {
+    console.error('Newsletter signup failed:', error);
+    toast('We could not subscribe you just now. Please try again.', 'error');
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+}
+
 // ── FOLLOW / UNFOLLOW (real DB rows) ─────────────────────────────────
 async function toggleFollow(userId) {
   if (!STATE.currentUser) { openAuth('signup'); return; }
