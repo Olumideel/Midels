@@ -233,6 +233,41 @@ async function onLogin() {
   await updateBadges();
   renderChefGrid(STATE.profiles);
   subscribeToMessages();
+  await handlePaymentReturn();
+}
+
+async function handlePaymentReturn() {
+  if (!STATE.currentUser) return;
+  const url = new URL(window.location.href);
+  if (url.searchParams.get('payment') !== 'return') return;
+  const reference = url.searchParams.get('reference') || url.searchParams.get('trxref');
+  if (!reference) {
+    toast('Payment return received, but no reference was provided. Check your payment history.', 'error');
+    url.searchParams.delete('payment');
+    window.history.replaceState({}, '', url.toString());
+    return;
+  }
+
+  toast('Verifying your payment securely…');
+  try {
+    const { data, error } = await sb.functions.invoke('verify-payment', {
+      body: { reference }
+    });
+    if (error) throw error;
+    if (data?.verified && data.status === 'paid') {
+      toast('Payment verified. Your subscription is now active.', 'success');
+    } else {
+      toast('Your payment is not confirmed yet. We will not activate access until Paystack verifies it.', 'error');
+    }
+  } catch (error) {
+    console.error('Payment return verification failed:', error);
+    toast('We could not verify the payment just yet. Please refresh your account shortly.', 'error');
+  } finally {
+    url.searchParams.delete('payment');
+    url.searchParams.delete('reference');
+    url.searchParams.delete('trxref');
+    window.history.replaceState({}, '', url.toString());
+  }
 }
 
 // ── CHECKOUT + NEWSLETTER ───────────────────────────────────────────
