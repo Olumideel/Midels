@@ -486,7 +486,7 @@ input,textarea,select{font-family:var(--body);}
 .profile-heading p{font-size:13px;color:var(--muted);overflow-wrap:anywhere;margin-top:4px;}
 .profile-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .profile-form-grid label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:var(--navy);}
-.profile-form-grid input,.profile-form-grid textarea{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:8px;font:14px var(--body);color:var(--navy);background:#fff;min-width:0;}
+.profile-form-grid select{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:8px;font:14px var(--body);color:var(--navy);background:#fff;min-width:0;}.profile-form-grid select:focus{outline:2px solid rgba(44,82,130,.18);border-color:var(--blue);}.profile-form-grid input,.profile-form-grid textarea{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:8px;font:14px var(--body);color:var(--navy);background:#fff;min-width:0;}
 .profile-form-grid input:focus,.profile-form-grid textarea:focus{outline:2px solid rgba(44,82,130,.18);border-color:var(--blue);}
 .profile-form-grid input[readonly]{background:var(--ice);color:var(--muted);}
 .profile-wide{grid-column:1/-1;}
@@ -828,10 +828,69 @@ input,textarea,select{font-family:var(--body);}
       <button class="rtag" onclick="settag('chinese',this)">🇨🇳 chinese</button>
       <button class="rtag" onclick="settag('italian',this)">🇮🇹 italian</button>
     </div>
+    <div style="display:flex;justify-content:flex-end;margin:18px 0 22px;">
+      <button class="btn bp" onclick="openRecipeComposer()">+ share your recipe</button>
+    </div>
     <div class="rgrid" id="rgrid"></div>
     <div id="noresults">no recipes found. try a different search or tag.</div>
   </div>
 </section>
+
+<div class="profile-modal" id="recipe-modal" onclick="if(event.target===this)closeRecipeComposer()">
+  <div class="profile-card">
+    <button class="profile-close" type="button" onclick="closeRecipeComposer()" aria-label="Close">×</button>
+    <div class="profile-heading">
+      <div class="profile-avatar">🍲</div>
+      <div><div class="profile-kicker">COMMUNITY RECIPE</div><h2>Share a dish with the world</h2><p>Document your ingredients, method and culinary story.</p></div>
+    </div>
+    <form id="recipe-form" onsubmit="submitRecipe(event)">
+      <div class="profile-form-grid">
+        <label>Recipe title *
+          <input id="recipe-title" maxlength="120" required placeholder="e.g. Nigerian party jollof"/>
+        </label>
+        <label>Cuisine *
+          <select id="recipe-cuisine" required>
+            <option value="">Choose cuisine</option><option value="nigerian">Nigerian</option><option value="japanese">Japanese</option><option value="indian">Indian</option><option value="mexican">Mexican</option><option value="french">French</option><option value="chinese">Chinese</option><option value="italian">Italian</option><option value="other">Other</option>
+          </select>
+        </label>
+        <label>Difficulty
+          <select id="recipe-difficulty"><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Advanced">Advanced</option><option value="Expert">Expert</option></select>
+        </label>
+        <label>Category
+          <input id="recipe-category" maxlength="60" placeholder="Main course, dessert…"/>
+        </label>
+        <label>Preparation time (minutes)
+          <input id="recipe-prep" type="number" min="0" max="1440" value="0"/>
+        </label>
+        <label>Cooking time (minutes)
+          <input id="recipe-cook" type="number" min="0" max="1440" value="0"/>
+        </label>
+        <label>Servings
+          <input id="recipe-servings" type="number" min="1" max="100" value="2"/>
+        </label>
+        <label>Food photo URL (HTTPS)
+          <input id="recipe-image" type="url" placeholder="https://…"/>
+        </label>
+        <label class="profile-wide">Short description
+          <textarea id="recipe-description" rows="2" maxlength="500" placeholder="What makes this dish special?"></textarea>
+        </label>
+        <label class="profile-wide">Ingredients * (one per line)
+          <textarea id="recipe-ingredients" rows="5" required placeholder="2 cups rice&#10;1 onion, diced&#10;…"></textarea>
+        </label>
+        <label class="profile-wide">Cooking instructions * (one step per line)
+          <textarea id="recipe-instructions" rows="6" required placeholder="Prepare the ingredients…&#10;Cook until…&#10;Serve warm…"></textarea>
+        </label>
+        <label class="profile-wide">Tags (comma-separated)
+          <input id="recipe-tags" maxlength="250" placeholder="jollof, rice, west african"/>
+        </label>
+      </div>
+      <div class="profile-actions">
+        <button class="btn ghost" type="button" onclick="closeRecipeComposer()">Cancel</button>
+        <button class="btn bp" id="recipe-submit" type="submit">Publish recipe</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <section id="pricing">
   <div class="wrap">
