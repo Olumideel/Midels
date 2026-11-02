@@ -14,6 +14,7 @@ const STATE = {
   currentUser: null,      // { id, name, role, emoji, color, ... } from profiles table
   profiles: [],           // all other users, loaded from DB
   activeChatUserId: null,
+  activeConversationId: null,
   messageChannel: null,   // realtime subscription handle
   friendsPanelTab: 'requests',
 };
@@ -290,7 +291,8 @@ async function declineFriendRequest(requestId, fromId) {
 }
 
 async function withdrawFriendRequest(requestId, toId) {
-  await sb.from('friend_requests').delete().eq('id', requestId);
+  const { error } = await sb.from('friend_requests').update({ status: 'withdrawn' }).eq('id', requestId);
+  if (error) { toast(error.message, 'error'); return; }
   const user = getUser(toId);
   toast(`Request to ${user.name} withdrawn.`);
   renderFriendsPanel();
@@ -319,19 +321,33 @@ function avatarMarkup(profile, className, extraMarkup = '') {
   return '<div class="' + className + '" style="background:' + escHTML(user.color || '#2c5282') + '"><span class="avatar-fallback">' + fallback + '</span>' + image + extraMarkup + '</div>';
 }
 
-// ── REAL-TIME CHAT (persisted + live) ────────────────────────────────
+// ── CONVERSATION-BASED REAL-TIME CHAT ───────────────────────────────
 async function openChat(userId) {
   if (!STATE.currentUser) { openAuth('signup'); return; }
+  if (!userId || userId === STATE.currentUser.id) return;
+
+  const { data: conversationId, error } = await sb.rpc('get_or_create_dm', { other_user: userId });
+  if (error || !conversationId) {
+    console.error('Unable to open conversation:', error);
+    toast(error?.message || 'Unable to open this conversation.', 'error');
+    return;
+  }
+
   const user = getUser(userId);
   STATE.activeChatUserId = userId;
+  STATE.activeConversationId = conversationId;
+  document.getElementById('chat-with-name').textContent = user.name || 'Member';
+  const avatar = document.getElementById('chat-av-icon');
+  if (avatar) {
+    avatar.outerHTML = avatarMarkup(user, 'chat-head-av', '<div class="chat-online-dot"></div>')
+      .replace('class="chat-head-av"', 'class="chat-head-av" id="chat-av-icon"');
+  }
 
-  document.getElementById('chat-with-name').textContent = user.name;
-  document.getElementById('chat-av-icon').outerHTML = avatarMarkup(user, 'chat-head-av', '<div class="chat-online-dot"></div>').replace('class="chat-head-av"', 'class="chat-head-av" id="chat-av-icon"');
-
-  await loadAndRenderMessages(userId);
-
-  await sb.from('messages').update({ read: true })
-    .eq('sender_id', userId).eq('receiver_id', STATE.currentUser.id).eq('read', false);
+  await loadAndRenderMessages(conversationId);
+  await sb.from('conversation_participants')
+    .update({ last_read_at: new Date().toISOString() })
+    .eq('conversation_id', conversationId)
+    .eq('user_id', STATE.currentUser.id);
 
   document.getElementById('chat-panel').classList.add('op');
   closeChatList();
@@ -341,14 +357,19 @@ async function openChat(userId) {
   }, 50);
 }
 
-async function loadAndRenderMessages(otherUserId) {
-  const me = STATE.currentUser.id;
+async function loadAndRenderMessages(conversationId) {
+  if (!conversationId || !STATE.currentUser) return;
   const { data, error } = await sb.from('messages')
-    .select('*')
-    .or(`and(sender_id.eq.${me},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${me})`)
+    .select('id,conversation_id,sender_id,body,attachment_url,attachment_type,created_at')
+    .eq('conversation_id', conversationId)
+    .is('deleted_at', null)
     .order('created_at', { ascending: true });
 
-  if (error) { console.error(error); return; }
+  if (error) {
+    console.error('Unable to load conversation messages:', error);
+    toast('Messages could not be loaded.', 'error');
+    return;
+  }
   renderChatMessages(data || []);
 }
 
@@ -357,45 +378,58 @@ function renderChatMessages(msgs) {
   body.innerHTML = msgs.map(m => {
     const isMe = m.sender_id === STATE.currentUser.id;
     const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const attachment = m.attachment_url
+      ? '<a class="chat-attachment" href="' + escHTML(m.attachment_url) + '" target="_blank" rel="noopener noreferrer">View attachment</a>'
+      : '';
     return `<div class="chat-msg ${isMe ? 'me' : 'them'}">
-      <div class="chat-bubble">${escHTML(m.content)}</div>
+      <div class="chat-bubble">${escHTML(m.body || '')}${attachment}</div>
       <div class="chat-time">${time}</div>
     </div>`;
   }).join('');
+  body.scrollTop = body.scrollHeight;
 }
 
 async function sendChatMsg() {
   const input = document.getElementById('chat-input');
-  const text = input.value.trim();
-  if (!text || !STATE.activeChatUserId || !STATE.currentUser) return;
+  const messageBody = input.value.trim();
+  if (!messageBody || !STATE.activeConversationId || !STATE.currentUser) return;
 
   const { error } = await sb.from('messages').insert({
+    conversation_id: STATE.activeConversationId,
     sender_id: STATE.currentUser.id,
-    receiver_id: STATE.activeChatUserId,
-    content: text
+    body: messageBody
   });
-  if (error) { toast('Message failed to send', 'error'); return; }
+  if (error) {
+    console.error('Message send failed:', error);
+    toast('Message failed to send.', 'error');
+    return;
+  }
 
   input.value = '';
-  await loadAndRenderMessages(STATE.activeChatUserId);
-  const body = document.getElementById('chat-body');
-  body.scrollTop = body.scrollHeight;
+  await loadAndRenderMessages(STATE.activeConversationId);
+  await sb.from('conversation_participants')
+    .update({ last_read_at: new Date().toISOString() })
+    .eq('conversation_id', STATE.activeConversationId)
+    .eq('user_id', STATE.currentUser.id);
 }
 
-// Subscribe once per login to receive messages live, from anyone, anytime
 function subscribeToMessages() {
   if (STATE.messageChannel) sb.removeChannel(STATE.messageChannel);
   STATE.messageChannel = sb.channel('messages-' + STATE.currentUser.id)
     .on('postgres_changes', {
-      event: 'INSERT', schema: 'public', table: 'messages',
-      filter: `receiver_id=eq.${STATE.currentUser.id}`
+      event: 'INSERT', schema: 'public', table: 'messages'
     }, payload => {
       const msg = payload.new;
-      if (STATE.activeChatUserId === msg.sender_id && document.getElementById('chat-panel').classList.contains('op')) {
-        loadAndRenderMessages(msg.sender_id);
+      if (!msg || msg.sender_id === STATE.currentUser.id) return;
+      if (STATE.activeConversationId === msg.conversation_id &&
+          document.getElementById('chat-panel').classList.contains('op')) {
+        loadAndRenderMessages(msg.conversation_id);
+        sb.from('conversation_participants')
+          .update({ last_read_at: new Date().toISOString() })
+          .eq('conversation_id', msg.conversation_id)
+          .eq('user_id', STATE.currentUser.id);
       } else {
-        const sender = getUser(msg.sender_id);
-        toast(`New message from ${sender.name || 'someone'} 💬`);
+        toast('You have a new message 💬');
         renderChatList();
       }
     })
@@ -405,6 +439,7 @@ function subscribeToMessages() {
 function closeChat() {
   document.getElementById('chat-panel').classList.remove('op');
   STATE.activeChatUserId = null;
+  STATE.activeConversationId = null;
 }
 function minimizeChat() {
   document.getElementById('chat-panel').classList.remove('op');
@@ -424,43 +459,73 @@ function closeChatList() {
 async function renderChatList() {
   if (!STATE.currentUser) return;
   const me = STATE.currentUser.id;
-  const { data, error } = await sb.from('messages')
-    .select('*')
-    .or(`sender_id.eq.${me},receiver_id.eq.${me}`)
-    .order('created_at', { ascending: false });
-
   const body = document.getElementById('chat-list-body');
-  if (error || !data || !data.length) {
-    body.innerHTML = `<div class="panel-empty"><div class="pe-icon">💬</div>No conversations yet</div>`;
+
+  const { data: memberships, error } = await sb.from('conversation_participants')
+    .select('conversation_id,last_read_at,conversations(id,dm_key,is_group,updated_at)')
+    .eq('user_id', me);
+
+  if (error) {
+    console.error('Unable to load conversations:', error);
+    body.innerHTML = '<div class="panel-empty">Conversations could not be loaded.</div>';
+    return;
+  }
+  if (!memberships || !memberships.length) {
+    body.innerHTML = '<div class="panel-empty"><div class="pe-icon">💬</div>No conversations yet</div>';
     return;
   }
 
-  const seen = new Map();
-  for (const m of data) {
-    const otherId = m.sender_id === me ? m.receiver_id : m.sender_id;
-    if (!seen.has(otherId)) {
-      seen.set(otherId, { preview: m.content, time: new Date(m.created_at), unread: 0 });
-    }
-    if (m.receiver_id === me && !m.read) seen.get(otherId).unread++;
+  const ids = memberships.map(x => x.conversation_id);
+  const [{ data: participants, error: participantError }, { data: messages, error: messageError }] = await Promise.all([
+    sb.from('conversation_participants').select('conversation_id,user_id').in('conversation_id', ids).neq('user_id', me),
+    sb.from('messages').select('conversation_id,sender_id,body,created_at').in('conversation_id', ids).is('deleted_at', null).order('created_at', { ascending: false })
+  ]);
+
+  if (participantError || messageError) {
+    console.error('Unable to load conversation details:', participantError || messageError);
+    body.innerHTML = '<div class="panel-empty">Conversation details could not be loaded.</div>';
+    return;
   }
 
-  body.innerHTML = [...seen.entries()].map(([uid, c]) => {
-    const u = getUser(uid);
-    return `<div class="conv-item" onclick="openChat('${uid}')">
-      ${avatarMarkup(u, 'conv-av')}
+  const otherUsers = new Map((participants || []).map(p => [p.conversation_id, p.user_id]));
+  const latest = new Map();
+  const unread = new Map();
+  const readAt = new Map(memberships.map(m => [m.conversation_id, m.last_read_at ? new Date(m.last_read_at).getTime() : 0]));
+
+  (messages || []).forEach(m => {
+    if (!latest.has(m.conversation_id)) latest.set(m.conversation_id, m);
+    if (m.sender_id !== me && new Date(m.created_at).getTime() > (readAt.get(m.conversation_id) || 0)) {
+      unread.set(m.conversation_id, (unread.get(m.conversation_id) || 0) + 1);
+    }
+  });
+
+  const items = memberships.map(m => {
+    const otherId = otherUsers.get(m.conversation_id);
+    const conversation = Array.isArray(m.conversations) ? m.conversations[0] : m.conversations;
+    if (!otherId || !conversation) return '';
+    const user = getUser(otherId);
+    const last = latest.get(m.conversation_id);
+    const preview = last ? last.body : 'Start a conversation';
+    const count = unread.get(m.conversation_id) || 0;
+    const time = last ? new Date(last.created_at).toLocaleDateString() : '';
+    return `<div class="conv-item" onclick="openChat('${otherId}')">
+      ${avatarMarkup(user, 'conv-av')}
       <div class="conv-info">
-        <div class="conv-name">${escHTML(u.name || 'Unknown')}</div>
-        <div class="conv-preview">${escHTML(c.preview)}</div>
+        <div class="conv-name">${escHTML(user.name || 'Unknown')}</div>
+        <div class="conv-preview">${escHTML(preview)}</div>
       </div>
       <div class="conv-meta">
-        <div class="conv-time">${c.time.toLocaleDateString()}</div>
-        ${c.unread > 0 ? `<div class="conv-unread">${c.unread}</div>` : ''}
+        <div class="conv-time">${time}</div>
+        ${count > 0 ? `<div class="conv-unread">${count}</div>` : ''}
       </div>
     </div>`;
-  }).join('');
+  }).filter(Boolean);
+
+  body.innerHTML = items.length ? items.join('') : '<div class="panel-empty">No conversations yet</div>';
 }
 
-// ── FRIENDS PANEL (real DB) ───────────────────────────────────────────
+// ── FRIENDS PANEL (real DB) ─────────────────────────────────────────
+ ───────────────────────────────────────────
 async function toggleFriendsPanel(tab) {
   const panel = document.getElementById('friends-panel');
   const isOpen = panel.classList.contains('op');
