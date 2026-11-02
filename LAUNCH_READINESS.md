@@ -23,12 +23,13 @@ This checklist distinguishes implemented code from external approvals and produc
 
 ### Business, legal and privacy
 - [ ] Confirm registered operator name, business address, jurisdiction and official support/privacy contacts.
-- [ ] Have Privacy Notice, Terms of Service, Cookie/Storage Notice, seller terms and refund policy reviewed by qualified counsel.
+- [ ] Have Privacy Notice, Terms of Service, Cookie/Storage Notice, seller terms and refund policy reviewed by qualified counsel. Non-public draft pages are in the repository and are not approved for publication.
 - [ ] Decide and enforce age eligibility and parental-consent requirements.
 - [ ] Implement verified data-access, export, correction and deletion request workflows.
 - [ ] Confirm Formspree data-processing terms, region, retention and access controls, or replace it with an approved support channel.
 - [ ] Define content moderation escalation, appeals and intellectual-property takedown procedures.
 - [ ] Define retention periods for messages, payment records, support cases, reports and backups.
+- [x] Add explicit opt-in to newsletter signup and a contact route for removal requests.
 
 ### Authentication and infrastructure
 - [ ] Move Supabase from Free to a production-appropriate plan before launch; Free currently lacks leaked-password protection and automatic daily backups.
