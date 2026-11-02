@@ -527,6 +527,7 @@ input,textarea,select{font-family:var(--body);}
 .rcard-img .rbadge{position:absolute;z-index:2;}
 .rcard-description{font-size:12px;line-height:1.5;color:var(--muted);margin:9px 0 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .recipe-loading{grid-column:1/-1;text-align:center;padding:40px 16px;color:var(--muted);}
+#learning{padding:100px 0;background:var(--ice)}.learn-head{text-align:center;margin-bottom:34px}.learn-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:24px;margin-top:28px}.learn-panel,.learn-course{background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:22px;box-shadow:var(--sc)}.learn-panel h3,.learn-course h4{font-size:18px;margin-bottom:12px;color:var(--navy)}.learn-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}.learn-form label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700}.learn-form input,.learn-form textarea{width:100%;padding:11px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--navy);font:14px var(--body)}.learn-form textarea{min-height:82px;resize:vertical}.learn-wide{grid-column:1/-1}.learn-list{display:grid;gap:14px}.learn-course{display:grid;gap:8px;padding:16px}.learn-course h4{font-size:16px;margin:0}.learn-meta,.learn-muted{font-size:12px;color:var(--muted);line-height:1.6}.learn-actions{display:flex;gap:8px;flex-wrap:wrap}.learn-actions .btn{padding:9px 14px;font-size:13px}.learn-progress{height:8px;background:var(--sky);border-radius:99px;overflow:hidden}.learn-progress span{display:block;height:100%;background:var(--green)}.learn-lesson{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border);font-size:13px}@media(max-width:800px){.learn-grid{grid-template-columns:1fr}.learn-form{grid-template-columns:1fr}.learn-wide{grid-column:auto}}
 </style>
 </head>
 <body>
@@ -540,7 +541,7 @@ input,textarea,select{font-family:var(--body);}
         <a href="#services" class="nl">services</a>
         <a href="#community" class="nl">community</a>
         <a href="#portfolio" class="nl">portfolio</a>
-        <a href="#recipes" class="nl">recipes</a>
+        <a href="#recipes" class="nl">recipes</a><a href="#learning" class="nl">school</a>
         <a href="#architecture" class="nl">tech</a>
         <a href="#pricing" class="nl">pricing</a>
         <a href="#contact" class="nl">contact</a>
@@ -564,7 +565,7 @@ input,textarea,select{font-family:var(--body);}
       <a href="#services" onclick="cmm()">services</a>
       <a href="#community" onclick="cmm()">community</a>
       <a href="#portfolio" onclick="cmm()">portfolio</a>
-      <a href="#recipes" onclick="cmm()">recipes</a>
+      <a href="#recipes" onclick="cmm()">recipes</a><a href="#learning" onclick="cmm()">culinary school</a>
       <a href="#architecture" onclick="cmm()">tech</a>
       <a href="#pricing" onclick="cmm()">pricing</a>
       <a href="#contact" onclick="cmm()">contact</a>
@@ -938,6 +939,7 @@ input,textarea,select{font-family:var(--body);}
   </div>
 </div>
 
+<section id="learning"><div class="wrap"><div class="learn-head"><span class="lbl">global culinary academy</span><h2 class="h2">Learn. Practise. Master the craft.</h2><p class="sub" style="margin:0 auto">Structured culinary courses, guided lessons and measurable learning progress from chefs and educators around the world.</p></div><div class="learn-grid"><div class="learn-panel"><h3>Explore courses</h3><p class="learn-muted" style="margin-bottom:14px">Explore published courses. Free enrolment is available now; paid checkout is part of the next commerce phase.</p><div id="learning-course-catalogue" class="learn-list"><p class="learn-muted">Loading courses…</p></div></div><div style="display:grid;gap:18px;align-content:start"><div class="learn-panel"><h3>My learning dashboard</h3><div id="learning-student-dashboard"><p class="learn-muted">Sign in to view your courses and progress.</p></div></div><div class="learn-panel"><h3>Instructor workspace</h3><p class="learn-muted" style="margin-bottom:14px">Create a course and add lessons to your instructor catalogue.</p><form id="learning-course-form" class="learn-form" onsubmit="createLearningCourse(event)"><label class="learn-wide">Course title<input id="learning-course-title" required maxlength="120" placeholder="e.g. Foundations of Nigerian Cuisine"></label><label class="learn-wide">Course description<textarea id="learning-course-description" maxlength="2000" placeholder="What will students learn?"></textarea></label><label>Price (NGN)<input id="learning-course-price" type="number" min="0" step="100" value="0" required></label><label>Course cover URL<input id="learning-course-cover" type="url" placeholder="https://…"></label><div class="learn-wide"><button class="btn bp" type="submit">Create course</button></div></form><div id="learning-instructor-courses" style="margin-top:16px"></div></div></div></div></div></section>
 <section id="pricing">
   <div class="wrap">
     <div class="pricehead rv">
@@ -1163,7 +1165,7 @@ ham.addEventListener('click',()=>{ham.classList.toggle('op');mm.classList.toggle
 function cmm(){ham.classList.remove('op');mm.classList.remove('op');}
 window.addEventListener('scroll',()=>{
   document.getElementById('nav').classList.toggle('sc',window.scrollY>10);
-  const secs=['hero','about','services','community','portfolio','recipes','pricing','faq','contact'];
+  const secs=['hero','about','services','community','portfolio','recipes','learning','pricing','faq','contact'];
   let cur='';secs.forEach(id=>{const e=document.getElementById(id);if(e&&window.scrollY>=e.offsetTop-120)cur=id;});
   document.querySelectorAll('.nlinks a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));
 },{passive:true});
