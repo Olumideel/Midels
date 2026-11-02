@@ -61,6 +61,7 @@ async function initBackend() {
   renderChefGrid(STATE.profiles);
   await loadPublicRecipes();
   await loadPlatformStats();
+  await loadLearningDashboard();
 }
 
 async function loadCurrentProfile(userId) {
@@ -237,6 +238,7 @@ async function onLogin() {
   renderChefGrid(STATE.profiles);
   await loadPublicRecipes();
   await loadPlatformStats();
+  await loadLearningDashboard();
   subscribeToMessages();
   await handlePaymentReturn();
 }
@@ -1326,4 +1328,73 @@ async function saveMyProfile(event) {
     : '👤';
   toast('Your profile has been saved.', 'success');
   closeMyProfile();
+}
+
+
+async function loadLearningDashboard(){
+ const catalogue=document.getElementById('learning-course-catalogue');if(!catalogue)return;
+ const {data:courses,error}=await sb.from('courses').select('id,title,description,price_minor,currency,instructor_id').eq('is_published',true).order('created_at',{ascending:false}).limit(30);
+ if(error){catalogue.textContent='Courses are temporarily unavailable.';console.error(error)}
+ else if(!courses?.length)catalogue.innerHTML='<p class="learn-muted">No published courses yet.</p>';
+ else{
+  const ids=[...new Set(courses.map(c=>c.instructor_id))];
+  const {data:teachers}=await sb.from('profiles').select('id,full_name,display_name').in('id',ids);
+  const names=new Map((teachers||[]).map(p=>[p.id,p.display_name||p.full_name||'Instructor']));
+  catalogue.innerHTML=courses.map(c=>'<article class="learn-course"><h4>'+escHTML(c.title)+'</h4><p class="learn-muted">'+escHTML(c.description||'Course details coming soon.')+'</p><p class="learn-meta">'+escHTML(names.get(c.instructor_id)||'Instructor')+' · '+(Number(c.price_minor)===0?'Free':formatCoursePrice(c.price_minor,c.currency))+'</p><div class="learn-actions"><button class="btn bp" onclick="enrolLearningCourse(\''+escHTML(c.id)+'\')">'+(Number(c.price_minor)===0?'Enrol for free':'Paid course')+'</button><button class="btn bo" onclick="viewLearningCourse(\''+escHTML(c.id)+'\')">Lessons</button></div></article>').join('');
+ }
+ const dashboard=document.getElementById('learning-student-dashboard'),instructor=document.getElementById('learning-instructor-courses');
+ if(!STATE.currentUser){dashboard.textContent='Sign in to view your learning progress.';instructor.textContent='Sign in to manage courses.';return}
+ const [enrolments,own]=await Promise.all([sb.from('enrollments').select('id,course_id,courses(title)').eq('student_id',STATE.currentUser.id),sb.from('courses').select('id,title,is_published').eq('instructor_id',STATE.currentUser.id)]);
+ if(enrolments.error)dashboard.textContent='Unable to load enrolments.';else if(!enrolments.data?.length)dashboard.innerHTML='<p class="learn-muted">You have not enrolled in a course yet.</p>';else{
+  const {data:progress}=await sb.from('lesson_progress').select('enrollment_id,lesson_id').eq('student_id',STATE.currentUser.id);
+  const {data:lessons}=await sb.from('course_lessons').select('id,course_id').eq('is_published',true);
+  dashboard.innerHTML=enrolments.data.map(e=>{const total=(lessons||[]).filter(l=>l.course_id===e.course_id).length,done=(progress||[]).filter(p=>p.enrollment_id===e.id).length,pct=total?Math.round(done/total*100):0;return '<div class="learn-course"><h4>'+escHTML(e.courses?.title||'Course')+'</h4><p class="learn-meta">'+done+' / '+total+' lessons · '+pct+'%</p><div class="learn-progress"><span style="width:'+pct+'%"></span></div><button class="btn bo" onclick="viewLearningCourse(\''+escHTML(e.course_id)+'\')">Continue</button></div>'}).join('');
+ }
+ instructor.innerHTML=(own.data||[]).map(c=>'<div class="learn-lesson"><span>'+escHTML(c.title)+' · '+(c.is_published?'Published':'Draft')+'</span><div class="learn-actions"><button class="btn bo" onclick="addLearningLesson(\''+escHTML(c.id)+'\')">Add lesson</button>'+(c.is_published?'':'<button class="btn bp" onclick="publishLearningCourse(\''+escHTML(c.id)+'\')">Publish</button>')+'</div></div>').join('')||'<p class="learn-muted">No courses created yet.</p>';
+}
+function formatCoursePrice(minor,currency){const amount=Number(minor||0)/100;try{return new Intl.NumberFormat(undefined,{style:'currency',currency:(currency||'NGN').trim()}).format(amount)}catch{return (currency||'NGN')+' '+amount.toFixed(2)}}
+async function createLearningCourse(event){
+ event.preventDefault();if(!STATE.currentUser){openAuth('login');return}
+ const title=document.getElementById('learning-course-title').value.trim(),description=document.getElementById('learning-course-description').value.trim(),price=Number(document.getElementById('learning-course-price').value),cover=document.getElementById('learning-course-cover').value.trim();
+ if(!title||!Number.isFinite(price)||price<0){toast('Enter a valid course title and price.','error');return}
+ if(cover){try{if(new URL(cover).protocol!=='https:')throw 0}catch{toast('Cover URL must use HTTPS.','error');return}}
+ const slug=title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,80)+'-'+crypto.randomUUID().slice(0,8);
+ const {error}=await sb.from('courses').insert({instructor_id:STATE.currentUser.id,title,slug,description,cover_url:cover||null,price_minor:Math.round(price*100),currency:'NGN',is_published:false});
+ if(error){toast('Course creation failed: '+error.message,'error');return}
+ document.getElementById('learning-course-form').reset();document.getElementById('learning-course-price').value='0';toast('Course draft created. Add lessons, then publish it.','success');await loadLearningDashboard();
+}
+async function addLearningLesson(courseId){
+ const title=prompt('Lesson title:');if(!title?.trim())return;const content=prompt('Lesson notes (optional):')||'';
+ const {data:rows}=await sb.from('course_lessons').select('position').eq('course_id',courseId).order('position',{ascending:false}).limit(1);
+ const {error}=await sb.from('course_lessons').insert({course_id:courseId,title:title.trim(),content,position:(rows?.[0]?.position||0)+1,is_published:false});
+ if(error){toast('Lesson could not be added: '+error.message,'error');return}toast('Lesson draft added.','success');await viewLearningCourse(courseId);
+}
+async function enrolLearningCourse(courseId){
+ if(!STATE.currentUser){openAuth('login');return}
+ const {data:course,error}=await sb.from('courses').select('id,price_minor').eq('id',courseId).eq('is_published',true).single();
+ if(error||!course){toast('Course unavailable.','error');return}
+ if(Number(course.price_minor)>0){toast('Paid course checkout is coming in the commerce phase.');return}
+ const {error:enrolError}=await sb.rpc('enroll_free_course',{course_uuid:courseId});
+ if(enrolError){toast('Enrolment failed: '+enrolError.message,'error');return}toast('You are enrolled!','success');await loadLearningDashboard();
+}
+async function viewLearningCourse(courseId){
+ const {data:course,error}=await sb.from('courses').select('id,title,description,instructor_id').eq('id',courseId).single();if(error||!course){toast('Course unavailable.','error');return}
+ const {data:lessons}=await sb.from('course_lessons').select('id,title,description,content,position,is_published').eq('course_id',courseId).order('position');
+ const {data:enrol}=STATE.currentUser?await sb.from('enrollments').select('id').eq('course_id',courseId).eq('student_id',STATE.currentUser.id).maybeSingle():{data:null};
+ const host=document.getElementById('learning-student-dashboard');if(!host)return;
+ host.innerHTML='<div class="learn-course"><h4>'+escHTML(course.title)+'</h4><p class="learn-muted">'+escHTML(course.description||'')+'</p>'+((lessons||[]).map(l=>'<div class="learn-lesson"><span><strong>'+escHTML(l.title)+'</strong><br>'+escHTML(l.content||l.description||'')+'</span>'+(enrol&&l.is_published?'<button class="btn bo" onclick="completeLearningLesson(\''+escHTML(enrol.id)+'\',\''+escHTML(l.id)+'\')">Complete</button>':(course.instructor_id===STATE.currentUser?.id&&!l.is_published?'<button class="btn bo" onclick="publishLearningLesson(\''+escHTML(l.id)+'\',\''+escHTML(courseId)+'\')">Publish lesson</button>':''))+'</div>').join('')||'<p class="learn-muted">No lessons have been added yet.</p>')+'<button class="btn bo" onclick="loadLearningDashboard()">Back to dashboard</button></div>';
+}
+async function completeLearningLesson(enrollmentId,lessonId){
+ const {error}=await sb.from('lesson_progress').upsert({student_id:STATE.currentUser.id,enrollment_id:enrollmentId,lesson_id:lessonId},{onConflict:'student_id,enrollment_id,lesson_id'});
+ if(error){toast('Progress could not be saved: '+error.message,'error');return}toast('Lesson completed.','success');await loadLearningDashboard();
+}
+async function publishLearningLesson(lessonId,courseId){
+ const {error}=await sb.from('course_lessons').update({is_published:true}).eq('id',lessonId);
+ if(error){toast('Lesson publish failed: '+error.message,'error');return}toast('Lesson published.','success');await viewLearningCourse(courseId);await loadLearningDashboard();
+}
+async function publishLearningCourse(courseId){
+ const {data:rows,error:readError}=await sb.from('course_lessons').select('id').eq('course_id',courseId).eq('is_published',true);
+ if(readError||!rows?.length){toast('Publish at least one lesson first.','error');return}
+ const {error}=await sb.from('courses').update({is_published:true,updated_at:new Date().toISOString()}).eq('id',courseId).eq('instructor_id',STATE.currentUser.id);
+ if(error){toast('Course publish failed: '+error.message,'error');return}toast('Course published.','success');await loadLearningDashboard();
 }
