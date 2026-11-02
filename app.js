@@ -346,8 +346,34 @@ async function openAdminConsole() {
   if (!panel) return;
   panel.style.display = 'block';
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  await loadAdminReports();
+  await Promise.all([loadAdminReports(), loadAdminMetrics()]);
 }
+async function loadAdminMetrics() {
+  if (!STATE.isPlatformAdmin) return;
+  const el = document.getElementById('admin-metrics');
+  if (!el) return;
+  el.textContent = 'Loading platform metrics…';
+  const { data, error } = await sb.rpc('admin_get_platform_metrics');
+  if (error || !data) {
+    console.error('Platform metrics unavailable:', error);
+    el.textContent = 'Platform metrics could not be loaded.';
+    return;
+  }
+  const fields = [
+    ['Active members', data.active_members],
+    ['Active chefs', data.active_chefs],
+    ['Published recipes', data.published_recipes],
+    ['Published courses', data.published_courses],
+    ['Active enrolments', data.active_enrolments],
+    ['Published products', data.published_products],
+    ['Paid transactions', data.paid_transactions],
+    ['Refunded transactions', data.refunded_transactions],
+    ['Open reports', data.open_reports]
+  ];
+  const revenue = (data.revenue_by_currency || []).map(x => x.currency + ': ' + (Number(x.amount_minor || 0) / 100).toFixed(2)).join(' · ') || 'No paid transactions recorded';
+  el.textContent = fields.map(x => x[0] + ': ' + Number(x[1] || 0).toLocaleString()).join(' | ') + ' | Paid revenue: ' + revenue + ' | Updated: ' + new Date(data.generated_at).toLocaleString();
+}
+
 async function loadAdminReports() {
   if (!STATE.isPlatformAdmin) return;
   const status = document.getElementById('admin-report-status')?.value || 'open';
