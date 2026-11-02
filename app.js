@@ -1350,7 +1350,7 @@ async function loadLearningDashboard(){
   const {data:lessons}=await sb.from('course_lessons').select('id,course_id').eq('is_published',true);
   dashboard.innerHTML=enrolments.data.map(e=>{const total=(lessons||[]).filter(l=>l.course_id===e.course_id).length,done=(progress||[]).filter(p=>p.enrollment_id===e.id).length,pct=total?Math.round(done/total*100):0;return '<div class="learn-course"><h4>'+escHTML(e.courses?.title||'Course')+'</h4><p class="learn-meta">'+done+' / '+total+' lessons · '+pct+'%</p><div class="learn-progress"><span style="width:'+pct+'%"></span></div><button class="btn bo" onclick="viewLearningCourse(\''+escHTML(e.course_id)+'\')">Continue</button></div>'}).join('');
  }
- instructor.innerHTML=(own.data||[]).map(c=>'<div class="learn-lesson"><span>'+escHTML(c.title)+' · '+(c.is_published?'Published':'Draft')+'</span><div class="learn-actions"><button class="btn bo" onclick="addLearningLesson(\''+escHTML(c.id)+'\')">Add lesson</button>'+(c.is_published?'':'<button class="btn bp" onclick="publishLearningCourse(\''+escHTML(c.id)+'\')">Publish</button>')+'</div></div>').join('')||'<p class="learn-muted">No courses created yet.</p>';
+ instructor.innerHTML=(own.data||[]).map(c=>'<div class="learn-lesson"><span>'+escHTML(c.title)+' · '+(c.is_published?'Published':'Draft')+'</span><div class="learn-actions"><button class="btn bo" onclick="addLearningLesson(\''+escHTML(c.id)+'\')">Add lesson</button><button class="btn bo" onclick="createCourseAssessment(\''+escHTML(c.id)+'\')">Create assessment</button>'+(c.is_published?'':'<button class="btn bp" onclick="publishLearningCourse(\''+escHTML(c.id)+'\')">Publish</button>')+'</div></div>').join('')||'<p class="learn-muted">No courses created yet.</p>';
 }
 function formatCoursePrice(minor,currency){const amount=Number(minor||0)/100;try{return new Intl.NumberFormat(undefined,{style:'currency',currency:(currency||'NGN').trim()}).format(amount)}catch{return (currency||'NGN')+' '+amount.toFixed(2)}}
 async function createLearningCourse(event){
@@ -1381,8 +1381,11 @@ async function viewLearningCourse(courseId){
  const {data:course,error}=await sb.from('courses').select('id,title,description,instructor_id').eq('id',courseId).single();if(error||!course){toast('Course unavailable.','error');return}
  const {data:lessons}=await sb.from('course_lessons').select('id,title,description,content,position,is_published').eq('course_id',courseId).order('position');
  const {data:enrol}=STATE.currentUser?await sb.from('enrollments').select('id').eq('course_id',courseId).eq('student_id',STATE.currentUser.id).maybeSingle():{data:null};
+ const {data:assessments}=await sb.from('course_assessments').select('id,title,description,is_published,pass_percentage').eq('course_id',courseId).order('created_at');
  const host=document.getElementById('learning-student-dashboard');if(!host)return;
- host.innerHTML='<div class="learn-course"><h4>'+escHTML(course.title)+'</h4><p class="learn-muted">'+escHTML(course.description||'')+'</p>'+((lessons||[]).map(l=>'<div class="learn-lesson"><span><strong>'+escHTML(l.title)+'</strong><br>'+escHTML(l.content||l.description||'')+'</span>'+(enrol&&l.is_published?'<button class="btn bo" onclick="completeLearningLesson(\''+escHTML(enrol.id)+'\',\''+escHTML(l.id)+'\')">Complete</button>':(course.instructor_id===STATE.currentUser?.id&&!l.is_published?'<button class="btn bo" onclick="publishLearningLesson(\''+escHTML(l.id)+'\',\''+escHTML(courseId)+'\')">Publish lesson</button>':''))+'</div>').join('')||'<p class="learn-muted">No lessons have been added yet.</p>')+'<button class="btn bo" onclick="loadLearningDashboard()">Back to dashboard</button></div>';
+ const lessonMarkup=(lessons||[]).map(l=>'<div class="learn-lesson"><span><strong>'+escHTML(l.title)+'</strong><br>'+escHTML(l.content||l.description||'')+'</span>'+(enrol&&l.is_published?'<button class="btn bo" onclick="completeLearningLesson(\''+escHTML(enrol.id)+'\',\''+escHTML(l.id)+'\')">Complete</button>':(course.instructor_id===STATE.currentUser?.id&&!l.is_published?'<button class="btn bo" onclick="publishLearningLesson(\''+escHTML(l.id)+'\',\''+escHTML(courseId)+'\')">Publish lesson</button>':''))+'</div>').join('');
+ const assessmentMarkup=(assessments||[]).map(a=>'<div class="learn-lesson"><span><strong>'+escHTML(a.title)+'</strong><br><small>Pass mark: '+Number(a.pass_percentage)+'%</small></span>'+(enrol&&a.is_published?'<button class="btn bo" onclick="startCourseAssessment(\''+escHTML(a.id)+'\')">Take assessment</button>':(course.instructor_id===STATE.currentUser?.id?'<span class="learn-muted">'+(a.is_published?'Published':'Draft')+'</span>':''))+'</div>').join('');
+ host.innerHTML='<div class="learn-course"><h4>'+escHTML(course.title)+'</h4><p class="learn-muted">'+escHTML(course.description||'')+'</p><h4>Lessons</h4>'+(lessonMarkup||'<p class="learn-muted">No lessons have been added yet.</p>')+'<h4 style="margin-top:18px">Assessments</h4>'+(assessmentMarkup||'<p class="learn-muted">No assessments published yet.</p>')+(enrol?'<div class="learn-actions"><button class="btn bp" onclick="requestCourseCertificate(\''+escHTML(enrol.id)+'\')">Request certificate</button></div>':'')+'<button class="btn bo" onclick="loadLearningDashboard()">Back to dashboard</button></div>';
 }
 async function completeLearningLesson(enrollmentId,lessonId){
  const {error}=await sb.from('lesson_progress').upsert({student_id:STATE.currentUser.id,enrollment_id:enrollmentId,lesson_id:lessonId},{onConflict:'student_id,enrollment_id,lesson_id'});
@@ -1397,4 +1400,68 @@ async function publishLearningCourse(courseId){
  if(readError||!rows?.length){toast('Publish at least one lesson first.','error');return}
  const {error}=await sb.from('courses').update({is_published:true,updated_at:new Date().toISOString()}).eq('id',courseId).eq('instructor_id',STATE.currentUser.id);
  if(error){toast('Course publish failed: '+error.message,'error');return}toast('Course published.','success');await loadLearningDashboard();
+}
+
+
+async function createCourseAssessment(courseId){
+ if(!STATE.currentUser)return;
+ const title=prompt('Assessment title:');if(!title?.trim())return;
+ const description=prompt('Assessment instructions (optional):')||'';
+ const pass=Number(prompt('Pass percentage (default 70):','70')||70);
+ if(!Number.isInteger(pass)||pass<1||pass>100){toast('Pass percentage must be between 1 and 100.','error');return}
+ const {data,error}=await sb.from('course_assessments').insert({course_id:courseId,title:title.trim(),description,pass_percentage:pass,is_published:false}).select('id').single();
+ if(error){toast('Assessment could not be created: '+error.message,'error');return}
+ toast('Assessment draft created. Add questions next.','success');
+ await addAssessmentQuestion(data.id,courseId);
+}
+async function addAssessmentQuestion(assessmentId,courseId){
+ const promptText=prompt('Question text:');if(!promptText?.trim())return;
+ const raw=prompt('Enter 2–6 answer options separated by | (example: Option A | Option B | Option C):');if(!raw)return;
+ const options=raw.split('|').map(x=>x.trim()).filter(Boolean);
+ if(options.length<2||options.length>6){toast('Provide between 2 and 6 options.','error');return}
+ const answer=Number(prompt('Which option is correct? Enter its number (starting at 1):','1'));
+ if(!Number.isInteger(answer)||answer<1||answer>options.length){toast('Correct option number is invalid.','error');return}
+ const explanation=prompt('Explanation (optional):')||'';
+ const {data:existing}=await sb.from('assessment_questions').select('position').eq('assessment_id',assessmentId).order('position',{ascending:false}).limit(1);
+ const {error}=await sb.from('assessment_questions').insert({assessment_id:assessmentId,prompt:promptText.trim(),options,correct_option:answer-1,explanation,position:(existing?.[0]?.position||0)+1});
+ if(error){toast('Question could not be saved: '+error.message,'error');return}
+ if(confirm('Question saved. Add another question?')){await addAssessmentQuestion(assessmentId,courseId);return}
+ await viewLearningCourse(courseId);
+}
+async function publishCourseAssessment(assessmentId,courseId){
+ const {data:questions,error:readError}=await sb.from('assessment_questions').select('id').eq('assessment_id',assessmentId);
+ if(readError||!questions?.length){toast('Add at least one question before publishing.','error');return}
+ const {error}=await sb.from('course_assessments').update({is_published:true,updated_at:new Date().toISOString()}).eq('id',assessmentId);
+ if(error){toast('Could not publish assessment: '+error.message,'error');return}
+ toast('Assessment published.','success');await viewLearningCourse(courseId);
+}
+async function startCourseAssessment(assessmentId){
+ const {data,error}=await sb.rpc('get_assessment_for_student',{p_assessment_id:assessmentId});
+ if(error){toast('Assessment unavailable: '+error.message,'error');return}
+ if(!data.questions?.length){toast('This assessment has no questions yet.','error');return}
+ const host=document.getElementById('learning-student-dashboard');
+ host.innerHTML='<div class="learn-course"><h3>'+escHTML(data.title)+'</h3><p class="learn-muted">'+escHTML(data.description||'')+' · Pass mark '+Number(data.pass_percentage)+'%</p><form id="course-assessment-form" onsubmit="submitCourseAssessment(event,\''+escHTML(assessmentId)+'\')">'+data.questions.map((q,i)=>'<fieldset style="border:0;border-top:1px solid var(--border);padding:14px 0"><legend><strong>'+(i+1)+'. '+escHTML(q.prompt)+'</strong></legend>'+q.options.map((o,n)=>'<label style="display:block;margin:8px 0;font-weight:400"><input type="radio" name="q_'+escHTML(q.id)+'" value="'+n+'" required> '+escHTML(o)+'</label>').join('')+'</fieldset>').join('')+'<button class="btn bp" type="submit">Submit answers</button></form><button class="btn bo" onclick="loadLearningDashboard()">Exit assessment</button></div>';
+}
+async function submitCourseAssessment(event,assessmentId){
+ event.preventDefault();const form=event.currentTarget,answers={};
+ form.querySelectorAll('input[type="radio"]:checked').forEach(input=>{const id=input.name.slice(2);answers[id]=Number(input.value)});
+ const {data,error}=await sb.rpc('submit_course_assessment',{p_assessment_id:assessmentId,p_answers:answers});
+ if(error){toast('Submission failed: '+error.message,'error');return}
+ const host=document.getElementById('learning-student-dashboard');
+ host.innerHTML='<div class="learn-course"><h3>Assessment result</h3><p class="learn-meta">Score: <strong>'+Number(data.score_percentage).toFixed(2)+'%</strong> · '+data.correct+'/'+data.total+' correct</p><p>'+(data.passed?'You passed. Well done!':'Not passed yet. Review the lessons and try again.')+'</p><p class="learn-muted">Required pass mark: '+Number(data.pass_percentage)+'%</p><button class="btn bo" onclick="loadLearningDashboard()">Return to dashboard</button></div>';
+}
+async function requestCourseCertificate(enrollmentId){
+ const {data,error}=await sb.rpc('issue_course_certificate',{p_enrollment_id:enrollmentId});
+ if(error){toast('Certificate not available yet: '+error.message,'error');return}
+ const host=document.getElementById('learning-student-dashboard');
+ host.innerHTML='<div class="learn-course"><h3>Certificate issued</h3><p>Your certificate code is <strong>'+escHTML(data.certificate_code)+'</strong></p><p class="learn-muted">Keep this code to verify your certificate.</p><button class="btn bo" onclick="GenUICopyCertificateCode(\''+escHTML(data.certificate_code)+'\')">Copy certificate code</button><button class="btn bo" onclick="loadLearningDashboard()">Return to dashboard</button></div>';
+}
+function GenUICopyCertificateCode(code){if(navigator.clipboard?.writeText)navigator.clipboard.writeText(code).then(()=>toast('Certificate code copied.','success')).catch(()=>toast('Copy unavailable. Please copy the code manually.'));else toast('Please copy the certificate code manually.');}
+async function verifyCourseCertificate(){
+ const field=document.getElementById('certificate-verify-code'),result=document.getElementById('certificate-verify-result');if(!field||!result)return;
+ const code=field.value.trim();if(!code){result.textContent='Enter a certificate code.';return}
+ result.textContent='Checking certificate…';
+ const {data,error}=await sb.rpc('verify_course_certificate',{p_certificate_code:code});
+ if(error||!data){result.textContent='No matching certificate was found.';return}
+ result.textContent=(data.valid?'Valid certificate':'Certificate revoked')+' · '+data.student_name+' · '+data.course_title+' · Issued '+new Date(data.issued_at).toLocaleDateString();
 }
