@@ -215,6 +215,7 @@ async function logoutUser() {
 
 function onLoggedOutUI() {
   document.getElementById('nav-social-icons').style.display = 'none';
+  document.getElementById('mobile-profile-link').style.display = 'none';
   document.getElementById('nav-login-btn').style.display = '';
   document.getElementById('nav-signup-btn').style.display = '';
   document.getElementById('nav-logout-btn').style.display = 'none';
@@ -223,6 +224,7 @@ function onLoggedOutUI() {
 
 async function onLogin() {
   document.getElementById('nav-social-icons').style.display = 'flex';
+  document.getElementById('mobile-profile-link').style.display = 'block';
   document.getElementById('nav-login-btn').style.display = 'none';
   document.getElementById('nav-signup-btn').style.display = 'none';
   document.getElementById('nav-logout-btn').style.display = '';
@@ -630,4 +632,72 @@ async function renderChefGrid(profiles) {
       </div>
     </div>`;
   }).join('');
+}
+
+
+/* ── PERSONAL PROFILE ───────────────────────────────────────────── */
+async function openMyProfile() {
+  if (!STATE.currentUser) { openAuth('login'); return; }
+  const profile = STATE.currentUser;
+  const { data: authData } = await sb.auth.getUser();
+  const email = authData?.user?.email || '';
+  document.getElementById('profile-email-display').textContent = email;
+  document.getElementById('profile-full-name').value = profile.full_name || profile.name || '';
+  document.getElementById('profile-display-name').value = profile.display_name || '';
+  document.getElementById('profile-username').value = profile.username || '';
+  document.getElementById('profile-role').value = (profile.role || 'food-lover').replace('-', ' ');
+  document.getElementById('profile-city').value = profile.city || '';
+  document.getElementById('profile-country').value = (profile.country_code || '').trim();
+  document.getElementById('profile-bio').value = profile.bio || '';
+  document.getElementById('profile-avatar-url').value = profile.avatar_url || '';
+  document.getElementById('profile-website').value = profile.website_url || '';
+  document.getElementById('profile-instagram').value = profile.instagram_url || '';
+  const avatar = document.getElementById('profile-avatar');
+  avatar.innerHTML = profile.avatar_url
+    ? '<img src="' + escHTML(profile.avatar_url) + '" alt="Profile photo" onerror="this.parentElement.textContent=\'👤\'">'
+    : '👤';
+  document.getElementById('profile-modal').classList.add('op');
+}
+function closeMyProfile() {
+  document.getElementById('profile-modal').classList.remove('op');
+}
+async function saveMyProfile(event) {
+  event.preventDefault();
+  if (!STATE.currentUser) { toast('Please sign in again.', 'error'); return; }
+  const fullName = document.getElementById('profile-full-name').value.trim();
+  const country = document.getElementById('profile-country').value.trim().toUpperCase();
+  const username = document.getElementById('profile-username').value.trim();
+  if (!fullName) { toast('Full name is required.', 'error'); return; }
+  if (username && !/^[a-zA-Z0-9_.-]{3,30}$/.test(username)) {
+    toast('Username must be 3–30 characters and use letters, numbers, dots, underscores or hyphens.', 'error'); return;
+  }
+  if (country && !/^[A-Z]{2}$/.test(country)) { toast('Country code must contain exactly two letters, such as NG.', 'error'); return; }
+  const updates = {
+    full_name: fullName,
+    display_name: document.getElementById('profile-display-name').value.trim() || null,
+    username: username || null,
+    city: document.getElementById('profile-city').value.trim() || null,
+    country_code: country || null,
+    bio: document.getElementById('profile-bio').value.trim() || null,
+    avatar_url: document.getElementById('profile-avatar-url').value.trim() || null,
+    website_url: document.getElementById('profile-website').value.trim() || null,
+    instagram_url: document.getElementById('profile-instagram').value.trim() || null,
+    updated_at: new Date().toISOString()
+  };
+  const button = document.getElementById('profile-save-btn');
+  button.disabled = true;
+  button.textContent = 'Saving…';
+  const { data, error } = await sb.from('profiles').update(updates).eq('id', STATE.currentUser.id).select().single();
+  button.disabled = false;
+  button.textContent = 'Save changes';
+  if (error) { toast(error.message, 'error'); return; }
+  STATE.currentUser = normalizeProfile(data);
+  await loadAllProfiles();
+  renderChefGrid(STATE.profiles);
+  const avatar = document.getElementById('profile-avatar');
+  avatar.innerHTML = data.avatar_url
+    ? '<img src="' + escHTML(data.avatar_url) + '" alt="Profile photo" onerror="this.parentElement.textContent=\'👤\'">'
+    : '👤';
+  toast('Your profile has been saved.', 'success');
+  closeMyProfile();
 }
