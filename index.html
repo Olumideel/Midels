@@ -865,7 +865,7 @@ input,textarea,select{font-family:var(--body);}
           <div class="pf y">verified certificates</div><div class="pf y">full analytics dashboard</div>
           <div class="pf y">40-language subtitles</div><div class="pf n">white-label school subdomain</div>
         </div>
-        <button class="planbtn fill" onclick="openAuth('signup')">upgrade to pro →</button>
+        <button class="planbtn fill" onclick="startPlanCheckout('pro', this)">upgrade to pro →</button>
       </div>
       <div class="plancard rv d2">
         <div class="ptier">culinary school</div>
@@ -878,10 +878,10 @@ input,textarea,select{font-family:var(--body);}
           <div class="pf y">priority discovery placement</div><div class="pf y">dedicated account manager</div>
           <div class="pf y">api access &amp; integrations</div>
         </div>
-        <button class="planbtn ghost" onclick="openAuth('signup')">upgrade to school</button>
+        <button class="planbtn ghost" onclick="startPlanCheckout('school', this)">upgrade to school</button>
       </div>
     </div>
-    <p style="text-align:center;font-size:13px;color:var(--muted);margin-top:28px;">🔒 secured by paystack · ssl encrypted · cancel any time · zero commission — ever</p>
+    <p style="text-align:center;font-size:13px;color:var(--muted);margin-top:28px;">🔒 Secure Paystack checkout · NGN billing · zero commission</p><p style="text-align:center;font-size:12px;color:var(--muted);margin-top:8px;">Annual prices are paid once per year at the displayed discounted monthly equivalent. Plans are prepaid for the selected period; renewal is manual until recurring billing is introduced.</p>
   </div>
 </section>
 
@@ -1099,7 +1099,7 @@ function filterrecipes(){
 }
 filterrecipes();
 let isAnnual=false;
-function togbill(){isAnnual=!isAnnual;document.getElementById('btpill').classList.toggle('yr',isAnnual);document.getElementById('lblmo').classList.toggle('on',!isAnnual);document.getElementById('lblyr').classList.toggle('on',isAnnual);document.getElementById('pp-pro').textContent=isAnnual?'per month · billed annually':'per month · billed monthly';document.getElementById('pp-school').textContent=isAnnual?'per month · billed annually':'per month · billed monthly';document.querySelectorAll('.pv').forEach(el=>{const v=parseInt(isAnnual?el.dataset.yr:el.dataset.mo);el.textContent=v.toLocaleString();});}
+function togbill(){isAnnual=!isAnnual;document.getElementById('btpill').classList.toggle('yr',isAnnual);document.getElementById('lblmo').classList.toggle('on',!isAnnual);document.getElementById('lblyr').classList.toggle('on',isAnnual);document.getElementById('pp-pro').textContent=isAnnual?'₦83,160 billed once yearly':'per month · billed monthly';document.getElementById('pp-school').textContent=isAnnual?'₦251,160 billed once yearly':'per month · billed monthly';document.querySelectorAll('.pv').forEach(el=>{const v=parseInt(isAnnual?el.dataset.yr:el.dataset.mo);el.textContent=v.toLocaleString();});}
 function togfaq(btn){const item=btn.parentElement;const wasOpen=item.classList.contains('op');document.querySelectorAll('.faqitem.op').forEach(i=>i.classList.remove('op'));if(!wasOpen)item.classList.add('op');}
 async function sendform(e){
   e.preventDefault();const btn=document.getElementById('fsub');btn.disabled=true;btn.textContent='Sending…';
