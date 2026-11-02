@@ -551,6 +551,7 @@ input,textarea,select{font-family:var(--body);}
         <button class="nav-icon-btn" onclick="toggleChatList()" title="Messages">💬<span class="nav-badge hidden" id="msg-badge"></span></button>
         <button class="nav-icon-btn" onclick="toggleFriendsPanel('following')" title="Following">❤️</button>
         <button class="nav-icon-btn" id="nav-profile-btn" onclick="openMyProfile()" title="My Profile" aria-label="My Profile">👤</button>
+        <button class="nav-icon-btn" id="nav-admin-btn" onclick="openAdminConsole()" title="Administration" aria-label="Administration" style="display:none;">⚙️</button>
       </div>
       <div class="ncta">
         <button class="nlogin" id="nav-login-btn" onclick="openAuth('login')">log in</button>
@@ -965,6 +966,23 @@ input,textarea,select{font-family:var(--body);}
 @media(max-width:520px){.market-grid{grid-template-columns:1fr}.market-form{grid-template-columns:1fr}.market-wide{grid-column:auto}}
 </style>
 
+
+<section id="admin-console" style="display:none;padding:110px 0 70px;background:var(--ice);">
+  <div class="wrap">
+    <span class="lbl">platform operations</span><h2 class="h2">Community moderation</h2>
+    <p class="sub" style="margin-bottom:24px;">Review member reports. Administrative actions are authorised by the database, not by this interface alone.</p>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+        <label for="admin-report-status">Report queue
+          <select id="admin-report-status" onchange="loadAdminReports()" style="display:block;margin-top:6px;padding:10px;border:1px solid var(--border);border-radius:8px;">
+            <option value="open">Open</option><option value="reviewing">Reviewing</option><option value="resolved">Resolved</option><option value="dismissed">Dismissed</option><option value="all">All reports</option>
+          </select>
+        </label><button class="btn bo" type="button" onclick="loadAdminReports()">Refresh queue</button>
+      </div>
+      <div id="admin-report-list" aria-live="polite"><p style="color:var(--muted);">Select the administration icon to load reports.</p></div>
+    </div>
+  </div>
+</section>
 <section id="pricing">
   <div class="wrap">
     <div class="pricehead rv">
