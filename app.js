@@ -346,7 +346,7 @@ async function openAdminConsole() {
   if (!panel) return;
   panel.style.display = 'block';
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  await Promise.all([loadAdminReports(), loadAdminMetrics()]);
+  await Promise.all([loadAdminReports(), loadAdminMetrics(), loadAdminPrivacyRequests()]);
 }
 async function loadAdminMetrics() {
   if (!STATE.isPlatformAdmin) return;
@@ -372,6 +372,49 @@ async function loadAdminMetrics() {
   ];
   const revenue = (data.revenue_by_currency || []).map(x => x.currency + ': ' + (Number(x.amount_minor || 0) / 100).toFixed(2)).join(' · ') || 'No paid transactions recorded';
   el.textContent = fields.map(x => x[0] + ': ' + Number(x[1] || 0).toLocaleString()).join(' | ') + ' | Paid revenue: ' + revenue + ' | Updated: ' + new Date(data.generated_at).toLocaleString();
+}
+
+
+async function loadAdminPrivacyRequests() {
+  if (!STATE.isPlatformAdmin) return;
+  const list = document.getElementById('admin-privacy-list');
+  if (!list) return;
+  const status = document.getElementById('admin-privacy-status')?.value || 'open';
+  list.textContent = 'Loading privacy requests…';
+  const { data, error } = await sb.rpc('admin_list_privacy_requests', { p_status: status });
+  if (error) {
+    console.error('Admin privacy queue failed:', error);
+    list.textContent = 'Unable to load privacy requests.';
+    return;
+  }
+  if (!data?.length) { list.textContent = 'No privacy requests in this queue.'; return; }
+  list.innerHTML = data.map(item => {
+    const label = item.request_type === 'data_deletion' ? 'Account deletion request' : 'Personal data access/export request';
+    const actions = item.status === 'open'
+      ? '<button class="btn bo" type="button" onclick="updateAdminPrivacyRequest(\'' + escHTML(item.id) + '\',\'reviewing\')">Mark reviewing</button>' : '';
+    const finalActions = ['fulfilled','rejected'].includes(item.status) ? ''
+      : '<button class="btn bp" type="button" onclick="updateAdminPrivacyRequest(\'' + escHTML(item.id) + '\',\'fulfilled\')">Mark fulfilled</button><button class="btn ghost" type="button" onclick="updateAdminPrivacyRequest(\'' + escHTML(item.id) + '\',\'rejected\')">Reject</button>';
+    return '<article style="padding:16px 0;border-bottom:1px solid var(--border);">' +
+      '<strong>' + label + '</strong><p style="font-size:13px;color:var(--muted);margin:6px 0;">' +
+      escHTML(item.display_name || 'Member') + ' · ' + escHTML(item.email || '') + ' · ' +
+      escHTML(item.status) + ' · ' + new Date(item.created_at).toLocaleString() + '</p>' +
+      (item.details ? '<p style="margin:8px 0;">' + escHTML(item.details) + '</p>' : '') +
+      '<div class="profile-actions" style="justify-content:flex-start;margin-top:10px;">' + actions + finalActions + '</div></article>';
+  }).join('');
+}
+
+async function updateAdminPrivacyRequest(requestId, status) {
+  if (!STATE.isPlatformAdmin) return;
+  const { data, error } = await sb.rpc('admin_update_privacy_request', {
+    p_request_id: requestId, p_status: status
+  });
+  if (error || data !== true) {
+    console.error('Privacy request update failed:', error);
+    toast('The privacy request could not be updated.', 'error');
+    return;
+  }
+  toast('Privacy request status updated.', 'success');
+  await loadAdminPrivacyRequests();
 }
 
 async function loadAdminReports() {
@@ -401,6 +444,49 @@ async function loadAdminReports() {
       '<div class="profile-actions" style="justify-content:flex-start;margin-top:12px;">' + actions + closeActions + '</div></article>';
   }).join('');
 }
+
+async function loadMyPrivacyRequests() {
+  const box = document.getElementById('my-privacy-requests');
+  if (!box || !STATE.currentUser?.id) return;
+  box.textContent = 'Loading your requests…';
+  const { data, error } = await sb.from('privacy_requests')
+    .select('request_type,status,created_at,resolved_at')
+    .eq('user_id', STATE.currentUser.id)
+    .order('created_at', { ascending: false }).limit(10);
+  if (error) {
+    console.error('Privacy requests load failed:', error);
+    box.textContent = 'Your request history is temporarily unavailable.';
+    return;
+  }
+  if (!data?.length) { box.textContent = 'You have not submitted a privacy request.'; return; }
+  box.textContent = data.map(item => {
+    const label = item.request_type === 'data_deletion' ? 'Account deletion' : 'Data copy';
+    return label + ' · ' + item.status + ' · ' + new Date(item.created_at).toLocaleDateString();
+  }).join('\n');
+}
+
+async function submitPrivacyRequest(requestType) {
+  if (!STATE.currentUser?.id || !['data_access','data_deletion'].includes(requestType)) return;
+  if (requestType === 'data_deletion') {
+    const confirm = window.prompt('This submits a deletion request for manual review; it does not immediately delete your account. Type DELETE to continue:');
+    if (confirm !== 'DELETE') return;
+  }
+  const details = window.prompt('Add any details that will help us process your request (optional, maximum 1,000 characters):') || '';
+  if (details.length > 1000) { toast('Details must be 1,000 characters or fewer.', 'error'); return; }
+  const { error } = await sb.from('privacy_requests').insert({
+    user_id: STATE.currentUser.id,
+    request_type: requestType,
+    details: details.trim() || null
+  });
+  if (error) {
+    console.error('Privacy request submission failed:', error);
+    toast(error.code === '23505' ? 'You already have an open request of this type.' : 'We could not submit your request. Please try again later.', 'error');
+    return;
+  }
+  toast('Your privacy request has been submitted for review.', 'success');
+  await loadMyPrivacyRequests();
+}
+
 async function updateAdminReport(reportId, status) {
   if (!STATE.isPlatformAdmin) return;
   const { data, error } = await sb.rpc('admin_update_content_report', { p_report_id: reportId, p_status: status });
@@ -1394,6 +1480,7 @@ async function openMyProfile() {
   avatar.innerHTML = profile.avatar_url
     ? '<img src="' + escHTML(profile.avatar_url) + '" alt="Profile photo" onerror="this.parentElement.textContent=\'👤\'">'
     : '👤';
+  await loadMyPrivacyRequests();
   document.getElementById('profile-modal').classList.add('op');
 }
 function closeMyProfile() {
