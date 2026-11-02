@@ -38,6 +38,8 @@ async function initBackend() {
         STATE.messageChannel = null;
       }
       onLoggedOutUI();
+    } else if (event === 'PASSWORD_RECOVERY') {
+      showPasswordRecoveryForm();
     }
   });
 
@@ -138,6 +140,67 @@ async function loginUser() {
   await onLogin();
   const firstName = (profile.name || profile.display_name || profile.full_name || 'there').trim().split(/\s+/)[0];
   toast(`Welcome back, ${firstName}! 👋`, 'success');
+}
+
+async function sendPasswordResetEmail() {
+  const email = document.getElementById('auth-email').value.trim();
+  if (!email) {
+    toast('Enter your account email address first.', 'error');
+    document.getElementById('auth-email').focus();
+    return;
+  }
+
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://olumideel.github.io/Midels/'
+  });
+
+  if (error) {
+    toast(error.message, 'error');
+    return;
+  }
+  toast('If an account exists for that email, a password recovery link has been sent. Check your inbox and spam folder.', 'success');
+}
+
+function showPasswordRecoveryForm() {
+  const modal = document.getElementById('auth-modal');
+  if (!modal) return;
+  modal.classList.add('op');
+  document.querySelector('.auth-tabs').style.display = 'none';
+  document.getElementById('auth-login-form').style.display = 'none';
+  document.getElementById('auth-signup-form').style.display = 'none';
+  document.getElementById('auth-recovery-form').style.display = '';
+  document.getElementById('auth-title').textContent = 'Reset your password';
+  document.getElementById('auth-sub').textContent = 'Choose a new password for your account';
+}
+
+async function updateRecoveredPassword() {
+  const password = document.getElementById('auth-new-password').value;
+  const confirm = document.getElementById('auth-confirm-password').value;
+  if (!password || password.length < 6) {
+    toast('Your new password must be at least 6 characters.', 'error');
+    return;
+  }
+  if (password !== confirm) {
+    toast('The passwords do not match.', 'error');
+    return;
+  }
+
+  const { data, error } = await sb.auth.updateUser({ password });
+  if (error) {
+    toast(error.message, 'error');
+    return;
+  }
+
+  const profile = await loadCurrentProfile(data.user.id);
+  if (profile) {
+    closeAuth();
+    await onLogin();
+    toast('Your password has been updated. Welcome back!', 'success');
+  } else {
+    toast('Password updated, but your profile could not be loaded. Please sign in again.', 'error');
+    await sb.auth.signOut();
+    switchAuthTab('login');
+  }
 }
 
 async function logoutUser() {
