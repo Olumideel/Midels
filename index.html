@@ -944,7 +944,7 @@ input,textarea,select{font-family:var(--body);}
    </div>
    <div class="learn-panel"><h3>My purchases</h3><p class="learn-muted">Your completed digital purchases are kept here.</p><div id="marketplace-library"><p class="learn-muted">Sign in to view your downloads.</p></div></div>
   </div>
-  <p class="learn-muted" style="margin-top:16px">Safety notice: creator and paid-course checkout is restricted to Paystack test mode until seller payout routing is configured and verified. Current checkout currency is NGN; international currencies and consultation booking are not yet enabled.</p>
+  <p class="learn-muted" style="margin-top:16px">Safety notice: all checkout is restricted to Paystack test mode during validation. Live charges are disabled. Current checkout currency is NGN; international currencies, consultation booking and automated seller payouts are not yet enabled.</p>
  </div>
 </section>
 <style>
@@ -970,7 +970,7 @@ input,textarea,select{font-family:var(--body);}
     <div class="pricehead rv">
       <span class="lbl">pricing</span>
       <h2 class="h2">simple plans. transparent pricing.</h2>
-      <p class="sub" style="margin:0 auto 28px">No platform sales commission is added at this stage. Paystack processing fees may apply; international checkout and automated seller payouts are still in development.</p>
+      <p class="sub" style="margin:0 auto 28px">No platform sales commission is currently added. Paystack processing fees may apply. Plan entitlements, live payments, international currencies and automated seller payouts are still being completed.</p>
     </div>
     <div class="btoggle rv">
       <span class="btlbl on" id="lblmo">monthly</span>
@@ -988,21 +988,21 @@ input,textarea,select{font-family:var(--body);}
           <div class="pf y">chef profile &amp; portfolio</div><div class="pf y">course creation and publishing</div>
           <div class="pf y">student enrolment</div><div class="pf y">recipe publishing</div>
           <div class="pf y">analytics (in development)</div><div class="pf y">community connections &amp; messaging</div>
-          <div class="pf n">live class hosting</div><div class="pf n">multi-currency storefront</div><div class="pf n">verified certificates</div>
+          <div class="pf n">live class hosting</div><div class="pf n">international currencies (in development)</div><div class="pf n">verified certificates</div>
         </div>
         <button class="planbtn ghost" onclick="openAuth('signup')">get started free</button>
       </div>
       <div class="plancard feat rv d1">
-        <div class="pbadge">⭐ most popular</div>
+        <div class="pbadge">creator plan</div>
         <div class="ptier">pro chef</div>
         <div class="prow"><span class="pcur">₦</span><span class="pamt pv" data-mo="9900" data-yr="6930">9,900</span></div>
         <div class="pper" id="pp-pro">per month · billed monthly</div>
         <p class="pdesc">for educators who want additional creator tools. Checkout is in test mode while payment and settlement flows are validated.</p>
         <div class="pfeats">
           <div class="pf y">everything in starter</div><div class="pf y">course and recipe publishing</div>
-          <div class="pf y">live class hosting (in development)</div><div class="pf y">digital storefront (NGN test checkout)</div>
-          <div class="pf y">verified certificates</div><div class="pf y">advanced analytics (in development)</div>
-          <div class="pf y">multilingual tools (planned)</div><div class="pf n">school subdomain (planned)</div>
+          <div class="pf n">live class hosting (in development)</div><div class="pf y">digital storefront (NGN test checkout)</div>
+          <div class="pf y">verified certificates</div><div class="pf n">advanced analytics (in development)</div>
+          <div class="pf n">multilingual tools (planned)</div><div class="pf n">school subdomain (planned)</div>
         </div>
         <button class="planbtn fill" onclick="startPlanCheckout('pro', this)">upgrade to pro →</button>
       </div>
@@ -1036,7 +1036,7 @@ input,textarea,select{font-family:var(--body);}
       <div class="rv d1">
         <div class="faqlist">
           <div class="faqitem"><button class="faqq" onclick="togfaq(this)">is there really zero commission on sales?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">Global Culinary Hub does not currently add a platform sales commission. Paystack processing fees may apply. Seller payout routing is not yet automated, so creator sales are restricted to test mode until settlement arrangements are completed.</div></div></div>
-          <div class="faqitem"><button class="faqq" onclick="togfaq(this)">how does paystack handle my payment?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">Payments are processed by Paystack. Checkout is currently restricted to NGN test transactions while seller settlement is being configured. International card acceptance and currency options depend on Paystack account approval and are not yet enabled in this release.</div></div></div>
+          <div class="faqitem"><button class="faqq" onclick="togfaq(this)">how does paystack handle my payment?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">Payments are processed by Paystack. All checkout, including subscriptions, is restricted to Paystack test mode while payment, refund and settlement flows are validated. Live charges are not enabled. International currency options depend on Paystack account approval and are not yet enabled in this release.</div></div></div>
           <div class="faqitem"><button class="faqq" onclick="togfaq(this)">can i cancel or switch plans any time?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">Subscription changes and cancellation controls are being finalised. Contact support before purchasing if you need a change or cancellation.</div></div></div>
           <div class="faqitem"><button class="faqq" onclick="togfaq(this)">what languages does the platform support?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">The current interface is primarily English. Multilingual interface and subtitle features are planned, but are not yet available.</div></div></div>
           <div class="faqitem"><button class="faqq" onclick="togfaq(this)">how quickly do i get paid?<span class="faqa">⌄</span></button><div class="faqbody"><div class="faqi">Automated creator payouts are not yet available. Sales settlement and seller payout routing must be configured and verified before live creator transactions are enabled.</div></div></div>
