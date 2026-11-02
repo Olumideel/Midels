@@ -274,6 +274,91 @@ async function handlePaymentReturn() {
   }
 }
 
+// ── RECIPE COMPOSER ────────────────────────────────────────────────
+function openRecipeComposer() {
+  if (!STATE.currentUser) {
+    openAuth('signup');
+    toast('Sign in or create an account to publish a recipe.');
+    return;
+  }
+  document.getElementById('recipe-modal').classList.add('op');
+}
+function closeRecipeComposer() {
+  document.getElementById('recipe-modal')?.classList.remove('op');
+}
+async function submitRecipe(event) {
+  event.preventDefault();
+  if (!STATE.currentUser) {
+    closeRecipeComposer();
+    openAuth('login');
+    return;
+  }
+
+  const title = document.getElementById('recipe-title').value.trim();
+  const ingredients = document.getElementById('recipe-ingredients').value
+    .split('\n').map(line => line.trim()).filter(Boolean);
+  const instructions = document.getElementById('recipe-instructions').value
+    .split('\n').map(line => line.trim()).filter(Boolean);
+  const imageInput = document.getElementById('recipe-image').value.trim();
+  let imageUrl = null;
+
+  if (!title || !ingredients.length || !instructions.length) {
+    toast('Add a title, ingredients and cooking instructions.', 'error');
+    return;
+  }
+  if (imageInput) {
+    try {
+      const parsed = new URL(imageInput);
+      if (parsed.protocol !== 'https:') throw new Error('HTTPS required');
+      imageUrl = parsed.href;
+    } catch {
+      toast('Food photo links must be valid HTTPS URLs.', 'error');
+      return;
+    }
+  }
+
+  const integerValue = id => {
+    const value = Number(document.getElementById(id).value);
+    return Number.isInteger(value) && value >= 0 ? value : 0;
+  };
+  const tags = document.getElementById('recipe-tags').value
+    .split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean).slice(0, 12);
+  const payload = {
+    author_id: STATE.currentUser.id,
+    title,
+    description: document.getElementById('recipe-description').value.trim() || null,
+    image_url: imageUrl,
+    cuisine: document.getElementById('recipe-cuisine').value,
+    category: document.getElementById('recipe-category').value.trim() || null,
+    difficulty: document.getElementById('recipe-difficulty').value,
+    prep_minutes: integerValue('recipe-prep'),
+    cook_minutes: integerValue('recipe-cook'),
+    servings: Math.max(1, integerValue('recipe-servings')),
+    ingredients,
+    instructions,
+    tags,
+    is_published: true
+  };
+
+  const button = document.getElementById('recipe-submit');
+  button.disabled = true;
+  button.textContent = 'Publishing…';
+  const { error } = await sb.from('recipes').insert(payload);
+  button.disabled = false;
+  button.textContent = 'Publish recipe';
+  if (error) {
+    console.error('Recipe publishing failed:', error);
+    toast(error.message || 'Your recipe could not be published.', 'error');
+    return;
+  }
+
+  document.getElementById('recipe-form').reset();
+  closeRecipeComposer();
+  await loadPublicRecipes();
+  await loadPlatformStats();
+  toast('Your recipe is now published in the community.', 'success');
+}
+
 // ── LIVE PLATFORM METRICS ──────────────────────────────────────────
 async function loadPlatformStats() {
   const [members, recipes, countries] = await Promise.all([
