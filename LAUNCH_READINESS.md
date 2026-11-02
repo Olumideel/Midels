@@ -7,7 +7,7 @@ This checklist distinguishes implemented code from external approvals and produc
 ## Implemented foundations
 
 - [x] Supabase Auth, PostgreSQL, Row Level Security and private file storage.
-- [x] All 29 public-schema tables have Row Level Security enabled.
+- [x] All 30 public-schema tables have Row Level Security enabled.
 - [x] Payment confirmation is server-side and restricted to the service role.
 - [x] Paystack checkout is hard-locked to test mode; live charges are disabled.
 - [x] Product purchases, paid downloads, refunds and refund access revocation are implemented.
