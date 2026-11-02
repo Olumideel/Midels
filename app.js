@@ -355,6 +355,65 @@ function openRecipeComposer() {
 function closeRecipeComposer() {
   document.getElementById('recipe-modal')?.classList.remove('op');
 }
+let editingRecipeId = null;
+
+function openRecipeEditor(recipeId) {
+  const recipe = liveRecipes.find(item => String(item.id) === String(recipeId));
+  if (!recipe || !STATE.currentUser || recipe.author_id !== STATE.currentUser.id) {
+    toast('You can only edit recipes you shared.', 'error');
+    return;
+  }
+  editingRecipeId = recipe.id;
+  const set = (id, value) => { const el = document.getElementById(id); if (el) el.value = value ?? ''; };
+  set('recipe-title', recipe.title);
+  set('recipe-cuisine', recipe.cuisine);
+  set('recipe-difficulty', recipe.difficulty || 'Easy');
+  set('recipe-category', recipe.category);
+  set('recipe-prep', recipe.prep_minutes || 0);
+  set('recipe-cook', recipe.cook_minutes || 0);
+  set('recipe-servings', recipe.servings || 2);
+  set('recipe-image', recipe.image_url || '');
+  set('recipe-description', recipe.description || '');
+  set('recipe-ingredients', Array.isArray(recipe.ingredients) ? recipe.ingredients.join('\n') : '');
+  set('recipe-instructions', Array.isArray(recipe.instructions) ? recipe.instructions.join('\n') : '');
+  set('recipe-tags', Array.isArray(recipe.tags) ? recipe.tags.join(', ') : '');
+  document.getElementById('recipe-photo-file').value = '';
+  showRecipePhotoPreview(recipe.image_url || '');
+  document.getElementById('recipe-form-title').textContent = 'Edit your recipe';
+  document.getElementById('recipe-submit').textContent = 'Save recipe changes';
+  closeRecipeDetail();
+  document.getElementById('recipe-modal').classList.add('op');
+}
+
+function previewRecipePhoto(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    event.target.value = '';
+    toast('Choose a JPG, PNG or WEBP food photograph.', 'error');
+    return;
+  }
+  if (file.size > 8 * 1024 * 1024) {
+    event.target.value = '';
+    toast('Food photographs must be 8 MB or smaller.', 'error');
+    return;
+  }
+  showRecipePhotoPreview(URL.createObjectURL(file));
+}
+
+function showRecipePhotoPreview(url) {
+  const preview = document.getElementById('recipe-photo-preview');
+  if (!preview) return;
+  preview.innerHTML = url
+    ? '<img src="' + escHTML(url) + '" alt="Food photograph preview"><span>Food photo preview</span>'
+    : '<span>🍽️ Your food photograph will appear here</span>';
+}
+
+function closeRecipeComposer() {
+  document.getElementById('recipe-modal')?.classList.remove('op');
+  editingRecipeId = null;
+}
+
 async function submitRecipe(event) {
   event.preventDefault();
   if (!STATE.currentUser) {
@@ -364,17 +423,15 @@ async function submitRecipe(event) {
   }
 
   const title = document.getElementById('recipe-title').value.trim();
-  const ingredients = document.getElementById('recipe-ingredients').value
-    .split('\n').map(line => line.trim()).filter(Boolean);
-  const instructions = document.getElementById('recipe-instructions').value
-    .split('\n').map(line => line.trim()).filter(Boolean);
+  const ingredients = document.getElementById('recipe-ingredients').value.split('\n').map(line => line.trim()).filter(Boolean);
+  const instructions = document.getElementById('recipe-instructions').value.split('\n').map(line => line.trim()).filter(Boolean);
   const imageInput = document.getElementById('recipe-image').value.trim();
-  let imageUrl = null;
-
+  const photoFile = document.getElementById('recipe-photo-file').files?.[0] || null;
   if (!title || !ingredients.length || !instructions.length) {
     toast('Add a title, ingredients and cooking instructions.', 'error');
     return;
   }
+  let imageUrl = imageInput ? null : (editingRecipeId ? (liveRecipes.find(r => r.id === editingRecipeId)?.image_url || null) : null);
   if (imageInput) {
     try {
       const parsed = new URL(imageInput);
@@ -385,15 +442,42 @@ async function submitRecipe(event) {
       return;
     }
   }
+  if (photoFile && (!['image/jpeg', 'image/png', 'image/webp'].includes(photoFile.type) || photoFile.size > 8 * 1024 * 1024)) {
+    toast('Choose a JPG, PNG or WEBP image up to 8 MB.', 'error');
+    return;
+  }
 
   const integerValue = id => {
     const value = Number(document.getElementById(id).value);
     return Number.isInteger(value) && value >= 0 ? value : 0;
   };
-  const tags = document.getElementById('recipe-tags').value
-    .split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean).slice(0, 12);
+  const tags = document.getElementById('recipe-tags').value.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean).slice(0, 12);
+  const recipeId = editingRecipeId || (crypto.randomUUID ? crypto.randomUUID() : null);
+  if (!recipeId) {
+    toast('This browser cannot create a secure recipe identifier. Please update your browser.', 'error');
+    return;
+  }
+  const button = document.getElementById('recipe-submit');
+  const originalLabel = editingRecipeId ? 'Save recipe changes' : 'Publish recipe';
+  button.disabled = true;
+  button.textContent = photoFile ? 'Uploading food photo…' : (editingRecipeId ? 'Saving changes…' : 'Publishing…');
+
+  if (photoFile) {
+    const extension = ({'image/jpeg':'jpg','image/png':'png','image/webp':'webp'})[photoFile.type];
+    const photoPath = STATE.currentUser.id + '/' + recipeId + '.' + extension;
+    const { error: uploadError } = await sb.storage.from('recipe-photos').upload(photoPath, photoFile, {
+      cacheControl: '3600', upsert: true, contentType: photoFile.type
+    });
+    if (uploadError) {
+      button.disabled = false;
+      button.textContent = originalLabel;
+      toast('Food photo upload failed: ' + uploadError.message, 'error');
+      return;
+    }
+    imageUrl = sb.storage.from('recipe-photos').getPublicUrl(photoPath).data.publicUrl;
+  }
+
   const payload = {
-    author_id: STATE.currentUser.id,
     title,
     description: document.getElementById('recipe-description').value.trim() || null,
     image_url: imageUrl,
@@ -405,29 +489,28 @@ async function submitRecipe(event) {
     servings: Math.max(1, integerValue('recipe-servings')),
     ingredients,
     instructions,
-    tags,
-    is_published: true
+    tags
   };
-
-  const button = document.getElementById('recipe-submit');
-  button.disabled = true;
-  button.textContent = 'Publishing…';
-  const { error } = await sb.from('recipes').insert(payload);
+  let result;
+  if (editingRecipeId) {
+    result = await sb.from('recipes').update(payload).eq('id', recipeId).eq('author_id', STATE.currentUser.id);
+  } else {
+    result = await sb.from('recipes').insert({...payload,id:recipeId,author_id:STATE.currentUser.id,is_published:true});
+  }
   button.disabled = false;
-  button.textContent = 'Publish recipe';
-  if (error) {
-    console.error('Recipe publishing failed:', error);
-    toast(error.message || 'Your recipe could not be published.', 'error');
+  button.textContent = originalLabel;
+  if (result.error) {
+    console.error('Recipe save failed:', result.error);
+    toast(result.error.message || 'Your recipe could not be saved.', 'error');
     return;
   }
-
   document.getElementById('recipe-form').reset();
+  showRecipePhotoPreview('');
   closeRecipeComposer();
   await loadPublicRecipes();
   await loadPlatformStats();
-  toast('Your recipe is now published in the community.', 'success');
+  toast(editingRecipeId ? 'Your recipe has been updated.' : 'Your recipe is now published.', 'success');
 }
-
 // ── LIVE PLATFORM METRICS ──────────────────────────────────────────
 async function loadPlatformStats() {
   const [members, recipes, countries] = await Promise.all([
@@ -579,6 +662,7 @@ function openRecipeDetail(recipeId) {
     '<h3>Ingredients</h3><ul class="recipe-ingredient-list">' + (ingredients || '<li>Ingredients have not been added.</li>') + '</ul>' +
     '<h3>Preparation</h3><ol class="recipe-instruction-list">' + (instructions || '<li>Preparation steps have not been added.</li>') + '</ol>' +
     (Array.isArray(recipe.tags) && recipe.tags.length ? '<div class="rcard-tags">' + recipe.tags.map(tag => '<span class="rtchip">' + escHTML(tag) + '</span>').join('') + '</div>' : '') +
+    (STATE.currentUser && STATE.currentUser.id === recipe.author_id ? '<div class="profile-actions" style="margin-top:22px"><button class="btn bp" type="button" onclick="openRecipeEditor(\'' + escHTML(recipe.id) + '\')">Edit my recipe</button></div>' : '') +
     '</div>';
   modal.classList.add('op');
 }
