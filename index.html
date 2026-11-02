@@ -1202,7 +1202,7 @@ const lbdata=[
  {tag:'courses',emoji:'🍛',title:'Spice Education Series',meta:'Illustrative course concept',desc:'An example multi-lesson learning path exploring spice selection, blending, storage and the culinary traditions associated with different ingredients.'},
  {tag:'branding',emoji:'🥩',title:'Restaurant Brand Portfolio',meta:'Illustrative brand concept',desc:'An example portfolio for a restaurant or food business to present its identity, cuisine, services and creative work.'},
  {tag:'heritage',emoji:'🍱',title:'Bento Heritage Collection',meta:'Illustrative archive concept',desc:'An example archive for recording bento styles, regional variations, preparation techniques and the stories connected to everyday food traditions.'}
-;
+];
 function openlb(i){const d=lbdata[i];document.getElementById('lbimg').innerHTML=`<button class="lbclose" onclick="clb()">✕</button><span style="font-size:96px">${d.emoji}</span>`;document.getElementById('lbtag').textContent=d.tag;document.getElementById('lbtitle').textContent=d.title;document.getElementById('lbmeta').textContent=d.meta;document.getElementById('lbdesc').textContent=d.desc;document.getElementById('lb').classList.add('op');document.body.style.overflow='hidden';}
 function clb(){document.getElementById('lb').classList.remove('op');document.body.style.overflow='';}
 function clbout(e){if(e.target===document.getElementById('lb'))clb();}
