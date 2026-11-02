@@ -1431,9 +1431,9 @@ async function addAssessmentQuestion(assessmentId,courseId){
 async function publishCourseAssessment(assessmentId,courseId){
  const {data:questions,error:readError}=await sb.from('assessment_questions').select('id').eq('assessment_id',assessmentId);
  if(readError||!questions?.length){toast('Add at least one question before publishing.','error');return}
- const {error}=await sb.from('course_assessments').update({is_published:true,updated_at:new Date().toISOString()}).eq('id',assessmentId);
+ const {error}=await sb.rpc('publish_course_assessment',{p_assessment_id:assessmentId});
  if(error){toast('Could not publish assessment: '+error.message,'error');return}
- toast('Assessment published.','success');await viewLearningCourse(courseId);
+ toast('Assessment published and locked against further edits.','success');await viewLearningCourse(courseId);
 }
 async function startCourseAssessment(assessmentId){
  const {data,error}=await sb.rpc('get_assessment_for_student',{p_assessment_id:assessmentId});
