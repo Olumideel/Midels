@@ -25,7 +25,8 @@ This checklist distinguishes implemented code from external approvals and produc
 - [ ] Confirm registered operator name, business address, jurisdiction and official support/privacy contacts.
 - [ ] Have Privacy Notice, Terms of Service, Cookie/Storage Notice, seller terms and refund policy reviewed by qualified counsel. Non-public draft pages are in the repository and are not approved for publication.
 - [ ] Decide and enforce age eligibility and parental-consent requirements.
-- [ ] Implement verified data-access, export, correction and deletion request workflows.
+- [ ] Complete verified data-access/export delivery, correction handling and deletion fulfilment workflows.
+- [x] Implement authenticated intake and administrator review queue for data-copy and account-deletion requests.
 - [ ] Confirm Formspree data-processing terms, region, retention and access controls, or replace it with an approved support channel.
 - [ ] Define content moderation escalation, appeals and intellectual-property takedown procedures.
 - [ ] Define retention periods for messages, payment records, support cases, reports and backups.
