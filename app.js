@@ -99,7 +99,7 @@ async function signupUser() {
   const { data, error } = await sb.auth.signUp({
     email,
     password: pass,
-    options: { data: { name: `${fname} ${lname}`.trim(), role: selectedRole } }
+    options: { data: { name: `${fname} ${lname}`.trim(), full_name: `${fname} ${lname}`.trim(), display_name: `${fname} ${lname}`.trim(), role: selectedRole, requested_role: selectedRole } }
   });
 
   if (error) { toast(error.message, 'error'); return; }
