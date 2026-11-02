@@ -471,20 +471,21 @@ async function loadPublicRecipes() {
   let authors = [];
   if (authorIds.length) {
     const { data: profiles, error: profileError } = await sb.from('profiles')
-      .select('id,full_name,display_name')
+      .select('id,full_name,display_name,avatar_url')
       .in('id', authorIds);
     if (!profileError) authors = profiles || [];
   }
-  const authorMap = new Map(authors.map(profile => [
-    profile.id,
-    profile.display_name || profile.full_name || 'Community chef'
-  ]));
+  const authorMap = new Map(authors.map(profile => [profile.id, profile]));
 
-  liveRecipes = (data || []).map(recipe => ({
-    ...recipe,
-    chef: authorMap.get(recipe.author_id) || 'Community chef',
-    tags: Array.isArray(recipe.tags) ? recipe.tags : []
-  }));
+  liveRecipes = (data || []).map(recipe => {
+    const author = authorMap.get(recipe.author_id) || {};
+    return {
+      ...recipe,
+      author,
+      chef: author.display_name || author.full_name || 'Community chef',
+      tags: Array.isArray(recipe.tags) ? recipe.tags : []
+    };
+  });
   filterrecipes();
 }
 
@@ -527,7 +528,8 @@ function filterrecipes() {
     return '<article class="rcard"><div class="rcard-img">' + image +
       '<span class="rbadge">' + escHTML(recipe.difficulty || recipe.cuisine || 'Community recipe') + '</span></div>' +
       '<div class="rcard-body"><div class="rcard-title">' + escHTML(recipe.title) + '</div>' +
-      '<div class="rcard-chef">by ' + escHTML(recipe.chef) + '</div>' +
+      '<div class="rcard-author">' + avatarMarkup(recipe.author, 'rcard-author-avatar') +
+      '<span class="rcard-chef">by ' + escHTML(recipe.chef) + '</span></div>' +
       '<div class="rcard-meta"><span>⏱ ' + escHTML(time) + '</span>' +
       (recipe.servings ? '<span> · Serves ' + Number(recipe.servings) + '</span>' : '') + '</div>' +
       (recipe.description ? '<p class="rcard-description">' + escHTML(recipe.description) + '</p>' : '') +
