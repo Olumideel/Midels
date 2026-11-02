@@ -753,9 +753,9 @@ input,textarea,select{font-family:var(--body);}
 <section id="portfolio">
   <div class="wrap">
     <div class="ph rv">
-      <span class="lbl">our work</span>
-      <h2 class="h2">culinary stories we've helped tell</h2>
-      <p class="sub" style="margin:0 auto;">from michelin-starred chefs to village grandmothers — every story deserves a global stage.</p>
+      <span class="lbl">illustrative use cases</span>
+      <h2 class="h2">ways creators can use the hub</h2>
+      <p class="sub" style="margin:0 auto;">The following are concept examples of how the platform can support courses, heritage archives and creator storefronts. They are not client case studies or performance claims.</p>
       <div class="pfilter">
         <button class="pfb on" onclick="fport('all',this)">all</button>
         <button class="pfb" onclick="fport('courses',this)">courses</button>
@@ -764,12 +764,12 @@ input,textarea,select{font-family:var(--body);}
       </div>
     </div>
     <div class="pgrid">
-      <div class="pc-card rv" data-cat="courses" onclick="openlb(0)"><div class="pimg">🍣</div><div class="pov"><div class="ptag">courses</div><div class="pname">tokyo knife mastery</div><div class="pmeta">hiroshi kato · 2,800 students enrolled</div></div></div>
-      <div class="pc-card rv d1" data-cat="heritage" onclick="openlb(1)"><div class="pimg">🫕</div><div class="pov"><div class="ptag">heritage</div><div class="pname">oaxacan mole archive</div><div class="pmeta">lucia morales · 14 regional recipes documented</div></div></div>
-      <div class="pc-card rv d2" data-cat="brand" onclick="openlb(2)"><div class="pimg">🥐</div><div class="pov"><div class="ptag">branding</div><div class="pname">maison dubois digital</div><div class="pmeta">paris pâtisserie · 50k+ followers gained</div></div></div>
-      <div class="pc-card rv" data-cat="courses" onclick="openlb(3)"><div class="pimg">🍛</div><div class="pov"><div class="ptag">courses</div><div class="pname">kerala spice journey</div><div class="pmeta">priya nair · $120k revenue in year one</div></div></div>
-      <div class="pc-card rv d1" data-cat="brand" onclick="openlb(4)"><div class="pimg">🥩</div><div class="pov"><div class="ptag">branding</div><div class="pname">gaucho fuego brand</div><div class="pmeta">buenos aires · 3 international pop-up deals</div></div></div>
-      <div class="pc-card rv d2" data-cat="heritage" onclick="openlb(5)"><div class="pimg">🍱</div><div class="pov"><div class="ptag">heritage</div><div class="pname">bento tradition project</div><div class="pmeta">osaka collective · 7 endangered recipes preserved</div></div></div>
+      <div class="pc-card rv" data-cat="courses" onclick="openlb(0)"><div class="pimg">🍣</div><div class="pov"><div class="ptag">courses</div><div class="pname">knife skills course</div><div class="pmeta">illustrative course concept</div></div></div>
+      <div class="pc-card rv d1" data-cat="heritage" onclick="openlb(1)"><div class="pimg">🫕</div><div class="pov"><div class="ptag">heritage</div><div class="pname">regional recipe archive</div><div class="pmeta">illustrative heritage concept</div></div></div>
+      <div class="pc-card rv d2" data-cat="brand" onclick="openlb(2)"><div class="pimg">🥐</div><div class="pov"><div class="ptag">branding</div><div class="pname">bakery creator storefront</div><div class="pmeta">illustrative creator concept</div></div></div>
+      <div class="pc-card rv" data-cat="courses" onclick="openlb(3)"><div class="pimg">🍛</div><div class="pov"><div class="ptag">courses</div><div class="pname">spice education series</div><div class="pmeta">illustrative course concept</div></div></div>
+      <div class="pc-card rv d1" data-cat="brand" onclick="openlb(4)"><div class="pimg">🥩</div><div class="pov"><div class="ptag">branding</div><div class="pname">restaurant brand portfolio</div><div class="pmeta">illustrative brand concept</div></div></div>
+      <div class="pc-card rv d2" data-cat="heritage" onclick="openlb(5)"><div class="pimg">🍱</div><div class="pov"><div class="ptag">heritage</div><div class="pname">bento heritage collection</div><div class="pmeta">illustrative archive concept</div></div></div>
     </div>
   </div>
 </section>
@@ -1196,13 +1196,13 @@ document.querySelectorAll('.rv').forEach(el=>ro.observe(el));
 })();
 function fport(cat,btn){document.querySelectorAll('.pfb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');document.querySelectorAll('.pc-card').forEach(c=>{c.style.display=(cat==='all'||c.dataset.cat===cat)?'':'none';});}
 const lbdata=[
-  {tag:'courses',emoji:'🍣',title:'Tokyo Knife Mastery',meta:'Hiroshi Kato · 2,800 students enrolled',desc:'A 12-module deep-dive into Japanese knife techniques — from basic julienne to katsuramuki. The course launched to a global audience of 2,800 students within the first 6 weeks.'},
-  {tag:'heritage',emoji:'🫕',title:'Oaxacan Mole Archive',meta:'Lucia Morales · 14 regional recipes documented',desc:'14 endangered mole recipes from the Oaxacan highlands, documented with video, written technique notes, and cultural history. Now permanently archived for future generations.'},
-  {tag:'branding',emoji:'🥐',title:'Maison Dubois Digital',meta:'Paris pâtisserie · 50k+ followers gained',desc:'Full digital identity for a 3rd-generation Parisian pâtisserie — profile, course launch, and social strategy resulting in 50,000+ new followers across platforms.'},
-  {tag:'courses',emoji:'🍛',title:'Kerala Spice Journey',meta:'Priya Nair · $120k revenue in year one',desc:'Priya\'s 4-course spice series went from zero to $120,000 in creator revenue within its first year — entirely through the Hub\'s zero-commission storefront.'},
-  {tag:'branding',emoji:'🥩',title:'Gaucho Fuego Brand',meta:'Buenos Aires · 3 international pop-up deals',desc:'A complete brand identity for a Buenos Aires asado specialist, leading to 3 international pop-up partnership deals secured through the Hub\'s talent discovery feature.'},
-  {tag:'heritage',emoji:'🍱',title:'Bento Tradition Project',meta:'Osaka collective · 7 endangered recipes preserved',desc:'A collaborative heritage project documenting 7 endangered bento traditions from rural Osaka, published in the Hub\'s open knowledge archive in 4 languages.'},
-];
+ {tag:'courses',emoji:'🍣',title:'Knife Skills Course',meta:'Illustrative course concept',desc:'An example course structure for teaching foundational knife skills, safe handling, preparation methods and practical kitchen techniques.'},
+ {tag:'heritage',emoji:'🫕',title:'Regional Recipe Archive',meta:'Illustrative heritage concept',desc:'An example heritage collection for documenting regional recipes, ingredient knowledge, preparation methods and the cultural context behind each dish.'},
+ {tag:'branding',emoji:'🥐',title:'Bakery Creator Storefront',meta:'Illustrative creator concept',desc:'An example creator profile and digital storefront for a bakery sharing recipe books, downloadable guides and culinary resources.'},
+ {tag:'courses',emoji:'🍛',title:'Spice Education Series',meta:'Illustrative course concept',desc:'An example multi-lesson learning path exploring spice selection, blending, storage and the culinary traditions associated with different ingredients.'},
+ {tag:'branding',emoji:'🥩',title:'Restaurant Brand Portfolio',meta:'Illustrative brand concept',desc:'An example portfolio for a restaurant or food business to present its identity, cuisine, services and creative work.'},
+ {tag:'heritage',emoji:'🍱',title:'Bento Heritage Collection',meta:'Illustrative archive concept',desc:'An example archive for recording bento styles, regional variations, preparation techniques and the stories connected to everyday food traditions.'}
+;
 function openlb(i){const d=lbdata[i];document.getElementById('lbimg').innerHTML=`<button class="lbclose" onclick="clb()">✕</button><span style="font-size:96px">${d.emoji}</span>`;document.getElementById('lbtag').textContent=d.tag;document.getElementById('lbtitle').textContent=d.title;document.getElementById('lbmeta').textContent=d.meta;document.getElementById('lbdesc').textContent=d.desc;document.getElementById('lb').classList.add('op');document.body.style.overflow='hidden';}
 function clb(){document.getElementById('lb').classList.remove('op');document.body.style.overflow='';}
 function clbout(e){if(e.target===document.getElementById('lb'))clb();}
