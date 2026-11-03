@@ -47,7 +47,8 @@ This checklist distinguishes implemented code from external approvals and produc
 - [ ] Complete seller identity/business verification and Paystack subaccount onboarding.
 - [ ] Implement seller settlement splits, payout reconciliation, disputes and refund operations.
 - [ ] Complete subscription lifecycle, cancellation and plan-entitlement enforcement.
-- [ ] Add currency-aware pricing only for currencies approved on the merchant account. Current checkout supports NGN only.
+- [x] Add indicative display-currency conversion for public course and marketplace prices (NGN, USD, GBP, EUR, CAD, AUD, ZAR, GHS and KES), using a daily reference-rate feed with local caching and visible attribution.
+- [ ] Extend currency display to subscription plan prices if required; checkout remains NGN only.
 - [ ] Obtain approval before switching any checkout path to live mode.
 
 ### Quality and operations
@@ -64,7 +65,8 @@ This checklist distinguishes implemented code from external approvals and produc
 
 - The Supabase project is on the Free plan and in the US West region.
 - Paystack checkout remains test-only. No live charges or seller settlements are enabled.
-- Checkout currency is currently NGN; international currency settlement is not implemented.
+- Public course and marketplace listings support indicative currency display; the source prices remain NGN.
+- Paystack checkout and merchant settlement remain NGN; no foreign-currency charges or international currency settlement are enabled.
 - Seller payout onboarding and split settlements are not implemented.
 - School plan and some subscription entitlement controls remain in development.
 - The latest code has passed static JavaScript syntax checks, but the latest interface changes still require live browser testing.
