@@ -18,7 +18,17 @@ const STATE = {
   activeConversationId: null,
   messageChannel: null,   // realtime subscription handle
   friendsPanelTab: 'requests',
+  currencyDisplay: 'NGN', currencyRates: null, currencyRatesUpdatedAt: null,
 };
+
+
+const DISPLAY_CURRENCIES=['NGN','USD','GBP','EUR','CAD','AUD','ZAR','GHS','KES'];
+const FX_CACHE_KEY='gch_ngn_fx_rates_v1',FX_CACHE_MAX_AGE=22*60*60*1000,FX_STALE_MAX_AGE=72*60*60*1000;
+function currencyFormat(amount,currency){try{return new Intl.NumberFormat(undefined,{style:'currency',currency,maximumFractionDigits:currency==='NGN'?0:2}).format(amount)}catch{return currency+' '+Number(amount).toFixed(2)}}
+function formatPublicPrice(minor,sourceCurrency){const source=String(sourceCurrency||'NGN').toUpperCase(),amount=Number(minor||0)/100,target=STATE.currencyDisplay||'NGN';if(source===target)return currencyFormat(amount,source);if(source!=='NGN'||target==='NGN'||!STATE.currencyRates?.[target])return currencyFormat(amount,source);return '≈ '+currencyFormat(amount*Number(STATE.currencyRates[target]),target)}
+function refreshPublicCurrencyPrices(){document.querySelectorAll('[data-public-price]').forEach(el=>{el.textContent=formatPublicPrice(Number(el.dataset.priceMinor||0),el.dataset.priceCurrency||'NGN')});const status=document.getElementById('currency-rate-status');if(status){if(STATE.currencyDisplay==='NGN')status.textContent='Prices and checkout are in NGN.';else if(STATE.currencyRatesUpdatedAt)status.textContent='Indicative conversion · rates updated '+new Date(STATE.currencyRatesUpdatedAt).toLocaleString()+' · checkout remains in NGN.';else status.textContent='Exchange rates unavailable. Showing original listing currency; checkout remains in NGN.'}}
+function setDisplayCurrency(currency){const next=String(currency||'').toUpperCase();if(!DISPLAY_CURRENCIES.includes(next))return;STATE.currencyDisplay=next;refreshPublicCurrencyPrices()}
+async function initCurrencyDisplay(){try{const cached=JSON.parse(localStorage.getItem(FX_CACHE_KEY)||'null');if(cached?.base_code==='NGN'&&cached?.rates&&Number.isFinite(cached.saved_at)){const age=Date.now()-cached.saved_at;if(age<=FX_STALE_MAX_AGE){STATE.currencyRates=cached.rates;STATE.currencyRatesUpdatedAt=cached.time_last_update_utc||null}if(age<=FX_CACHE_MAX_AGE){refreshPublicCurrencyPrices();return}}}catch(error){console.warn('Stored currency rates could not be read:',error)}try{const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);let response;try{response=await fetch('https://open.er-api.com/v6/latest/NGN',{method:'GET',cache:'no-store',signal:controller.signal})}finally{clearTimeout(timeout)}if(!response.ok)throw new Error('Exchange-rate service returned HTTP '+response.status);const payload=await response.json();if(payload?.result!=='success'||payload?.base_code!=='NGN'||!payload?.rates||!Number.isFinite(Number(payload.time_last_update_unix)))throw new Error('Exchange-rate response failed validation');const rates={NGN:1};DISPLAY_CURRENCIES.forEach(code=>{const rate=Number(payload.rates[code]);if(Number.isFinite(rate)&&rate>0)rates[code]=rate});STATE.currencyRates=rates;STATE.currencyRatesUpdatedAt=payload.time_last_update_utc||new Date(Number(payload.time_last_update_unix)*1000).toISOString();try{localStorage.setItem(FX_CACHE_KEY,JSON.stringify({base_code:'NGN',rates,time_last_update_utc:STATE.currencyRatesUpdatedAt,saved_at:Date.now()}))}catch(error){console.warn('Currency rates could not be cached:',error)}}catch(error){console.warn('Currency conversion unavailable; keeping NGN prices:',error)}refreshPublicCurrencyPrices()}
 
 // ── Init on page load ──────────────────────────────────────────────
 function normalizeProfile(profile) {
@@ -31,6 +41,7 @@ function normalizeProfile(profile) {
 }
 
 async function initBackend() {
+  initCurrencyDisplay();
   // Auth handlers below own the SIGNED_IN UI transition, preventing duplicate
   // profile loads and duplicate realtime subscriptions.
   sb.auth.onAuthStateChange((event) => {
@@ -1572,7 +1583,7 @@ async function loadMarketplace(){
   let ownedIds=new Set();if(STATE.currentUser){const {data:owned}=await sb.from('product_purchases').select('product_id').eq('buyer_id',STATE.currentUser.id);ownedIds=new Set((owned||[]).map(x=>x.product_id))}
   catalogue.innerHTML=products.map(p=>{
    const mine=STATE.currentUser?.id===p.seller_id,owned=ownedIds.has(p.id),image=p.cover_url?'<img src="'+escHTML(p.cover_url)+'" alt="" loading="lazy" style="width:100%;height:150px;object-fit:cover;border-radius:8px">':'<div style="height:110px;border-radius:8px;background:var(--ice);display:grid;place-items:center;font-size:42px">📚</div>',action=owned?'<button class="btn bp" onclick="downloadMarketplaceProduct(\''+escHTML(p.id)+'\')">Download purchase</button>':mine?'<span class="learn-muted">Your storefront item</span>':'<button class="btn bp" onclick="buyMarketplaceProduct(\''+escHTML(p.id)+'\')">Buy securely</button>',searchText=[p.title,p.description,p.category,p.product_type,sellerNames.get(p.seller_id)].filter(Boolean).join(' ').toLowerCase();
-   return '<article class="market-product" data-search="'+escHTML(searchText)+'" data-category="'+escHTML(p.category||'Other')+'" data-price="'+Number(p.price_minor||0)+'" data-created="'+new Date(p.created_at).getTime()+'">'+image+'<div class="market-product-type">'+escHTML((p.category||'Culinary resource').toUpperCase())+'</div><h4>'+escHTML(p.title)+'</h4><p class="learn-muted">'+escHTML(p.description||'Digital resource from a culinary creator.')+'</p><p class="learn-meta">By '+escHTML(sellerNames.get(p.seller_id)||'Culinary creator')+'</p><div class="market-product-footer"><strong>'+formatCoursePrice(p.price_minor,p.currency)+'</strong>'+action+'</div></article>';
+   return '<article class="market-product" data-search="'+escHTML(searchText)+'" data-category="'+escHTML(p.category||'Other')+'" data-price="'+Number(p.price_minor||0)+'" data-created="'+new Date(p.created_at).getTime()+'">'+image+'<div class="market-product-type">'+escHTML((p.category||'Culinary resource').toUpperCase())+'</div><h4>'+escHTML(p.title)+'</h4><p class="learn-muted">'+escHTML(p.description||'Digital resource from a culinary creator.')+'</p><p class="learn-meta">By '+escHTML(sellerNames.get(p.seller_id)||'Culinary creator')+'</p><div class="market-product-footer"><strong class="public-price" data-public-price data-price-minor="'+Number(p.price_minor||0)+'" data-price-currency="'+escHTML(p.currency||'NGN')+'">'+formatPublicPrice(p.price_minor,p.currency)+'</strong>'+action+'</div></article>';
   }).join('');
  }
  filterMarketplaceProducts();
@@ -1654,7 +1665,7 @@ async function loadLearningDashboard(){
   const ids=[...new Set(courses.map(c=>c.instructor_id))];
   const {data:teachers}=await sb.from('profiles').select('id,full_name,display_name').in('id',ids);
   const names=new Map((teachers||[]).map(p=>[p.id,p.display_name||p.full_name||'Instructor']));
-  catalogue.innerHTML=courses.map(c=>'<article class="learn-course"><h4>'+escHTML(c.title)+'</h4><p class="learn-muted">'+escHTML(c.description||'Course details coming soon.')+'</p><p class="learn-meta">'+escHTML(names.get(c.instructor_id)||'Instructor')+' · '+(Number(c.price_minor)===0?'Free':formatCoursePrice(c.price_minor,c.currency))+'</p><div class="learn-actions"><button class="btn bp" onclick="enrolLearningCourse(\''+escHTML(c.id)+'\')">'+(Number(c.price_minor)===0?'Enrol for free':'Paid course')+'</button><button class="btn bo" onclick="viewLearningCourse(\''+escHTML(c.id)+'\')">Lessons</button></div></article>').join('');
+  catalogue.innerHTML=courses.map(c=>'<article class="learn-course"><h4>'+escHTML(c.title)+'</h4><p class="learn-muted">'+escHTML(c.description||'Course details coming soon.')+'</p><p class="learn-meta">'+escHTML(names.get(c.instructor_id)||'Instructor')+' · '+(Number(c.price_minor)===0?'Free':'<span class="public-price" data-public-price data-price-minor="'+Number(c.price_minor||0)+'" data-price-currency="'+escHTML(c.currency||'NGN')+'">'+formatPublicPrice(c.price_minor,c.currency)+'</span>')+'</p><div class="learn-actions"><button class="btn bp" onclick="enrolLearningCourse(\''+escHTML(c.id)+'\')">'+(Number(c.price_minor)===0?'Enrol for free':'Paid course')+'</button><button class="btn bo" onclick="viewLearningCourse(\''+escHTML(c.id)+'\')">Lessons</button></div></article>').join('');
  }
  const dashboard=document.getElementById('learning-student-dashboard'),instructor=document.getElementById('learning-instructor-courses');
  if(!STATE.currentUser){dashboard.textContent='Sign in to view your learning progress.';instructor.textContent='Sign in to manage courses.';return}
