@@ -1705,12 +1705,11 @@ async function createLearningCourse(event){
  if(error){toast('Course creation failed: '+error.message,'error');return}
  document.getElementById('learning-course-form').reset();document.getElementById('learning-course-price').value='0';toast('Course draft created. Add lessons, then publish it.','success');await loadLearningDashboard();
 }
-async function addLearningLesson(courseId){
- const title=prompt('Lesson title:');if(!title?.trim())return;const content=prompt('Lesson notes (optional):')||'';
- const {data:rows}=await sb.from('course_lessons').select('position').eq('course_id',courseId).order('position',{ascending:false}).limit(1);
- const {error}=await sb.from('course_lessons').insert({course_id:courseId,title:title.trim(),content,position:(rows?.[0]?.position||0)+1,is_published:false});
- if(error){toast('Lesson could not be added: '+error.message,'error');return}toast('Lesson draft added.','success');await viewLearningCourse(courseId);
+function addLearningLesson(courseId){
+ if(!STATE.currentUser){openAuth('login');return}
+ openAcademyEditor({title:'Add a lesson',description:'Create a structured lesson for your course. It will remain a draft until you publish it.',action:'lesson',courseId,fields:'<label>Lesson title<input name="title" maxlength="160" required placeholder="e.g. Preparing a classic Nigerian stock"></label><label>Short description (optional)<textarea name="description" maxlength="500" rows="2" placeholder="What will this lesson cover?"></textarea></label><label>Lesson notes or teaching content<textarea name="content" maxlength="12000" rows="7" placeholder="Write the lesson material here…"></textarea></label>'});
 }
+
 async function enrolLearningCourse(courseId){
  if(!STATE.currentUser){openAuth('login');return}
  const {data:course,error}=await sb.from('courses').select('id,price_minor,currency,instructor_id').eq('id',courseId).eq('is_published',true).single();
@@ -1726,6 +1725,42 @@ async function enrolLearningCourse(courseId){
  if(enrolError){toast('Enrolment failed: '+enrolError.message,'error');return}
  toast('You are enrolled!','success');await loadLearningDashboard();
 }
+function openAcademyEditor(config){
+ const host=document.getElementById('academy-editor');if(!host)return;
+ host.innerHTML='<div class="academy-editor-backdrop" role="presentation"><section class="academy-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="academy-editor-title" aria-describedby="academy-editor-description"><div class="academy-editor-heading"><div><h3 id="academy-editor-title">'+escHTML(config.title)+'</h3><p id="academy-editor-description">'+escHTML(config.description)+'</p></div><button type="button" class="academy-editor-close" onclick="closeAcademyEditor()" aria-label="Close editor">×</button></div><form id="academy-editor-form" data-action="'+escHTML(config.action)+'" data-course-id="'+escHTML(config.courseId||'')+'" data-assessment-id="'+escHTML(config.assessmentId||'')+'" onsubmit="submitAcademyEditor(event)">'+config.fields+'<div class="academy-editor-actions"><button type="button" class="btn bo" onclick="closeAcademyEditor()">Cancel</button><button type="submit" class="btn bp">Save draft</button></div></form></section></div>';
+ host.hidden=false;const first=host.querySelector('input:not([type=checkbox]),textarea');if(first)first.focus();
+}
+function closeAcademyEditor(){const host=document.getElementById('academy-editor');if(host){host.hidden=true;host.innerHTML=''}}
+async function submitAcademyEditor(event){
+ event.preventDefault();const form=event.currentTarget,values=new FormData(form),action=form.dataset.action,courseId=form.dataset.courseId,assessmentId=form.dataset.assessmentId,submit=form.querySelector('button[type=submit]');if(submit)submit.disabled=true;
+ if(action==='lesson'){
+  const title=String(values.get('title')||'').trim(),description=String(values.get('description')||'').trim(),content=String(values.get('content')||'').trim();
+  if(!title){toast('Enter a lesson title.','error');if(submit)submit.disabled=false;return}
+  const {data:rows,error:positionError}=await sb.from('course_lessons').select('position').eq('course_id',courseId).order('position',{ascending:false}).limit(1);
+  if(positionError){toast('Could not prepare the lesson: '+positionError.message,'error');if(submit)submit.disabled=false;return}
+  const {error}=await sb.from('course_lessons').insert({course_id:courseId,title,description,content,position:(rows?.[0]?.position||0)+1,is_published:false});
+  if(error){toast('Lesson could not be added: '+error.message,'error');if(submit)submit.disabled=false;return}
+  closeAcademyEditor();toast('Lesson draft added.','success');await viewLearningCourse(courseId);return;
+ }
+ if(action==='assessment'){
+  const title=String(values.get('title')||'').trim(),description=String(values.get('description')||'').trim(),pass=Number(values.get('pass'));
+  if(!title||!Number.isInteger(pass)||pass<1||pass>100){toast('Enter a title and a pass percentage from 1 to 100.','error');if(submit)submit.disabled=false;return}
+  const {error}=await sb.from('course_assessments').insert({course_id:courseId,title,description,pass_percentage:pass,is_published:false});
+  if(error){toast('Assessment could not be created: '+error.message,'error');if(submit)submit.disabled=false;return}
+  closeAcademyEditor();toast('Assessment draft created. Add questions before publishing.','success');await viewLearningCourse(courseId);return;
+ }
+ if(action==='question'){
+  const promptText=String(values.get('prompt')||'').trim(),options=String(values.get('options')||'').split(/\r?\n|\|/).map(x=>x.trim()).filter(Boolean),answer=Number(values.get('answer')),explanation=String(values.get('explanation')||'').trim(),addAnother=values.get('addAnother')==='yes';
+  if(!promptText||options.length<2||options.length>6||options.some((v,i)=>options.indexOf(v)!==i)||!Number.isInteger(answer)||answer<1||answer>options.length){toast('Enter a question, 2–6 distinct options and a valid correct option number.','error');if(submit)submit.disabled=false;return}
+  const {data:existing,error:positionError}=await sb.from('assessment_questions').select('position').eq('assessment_id',assessmentId).order('position',{ascending:false}).limit(1);
+  if(positionError){toast('Could not prepare the question: '+positionError.message,'error');if(submit)submit.disabled=false;return}
+  const {error}=await sb.from('assessment_questions').insert({assessment_id:assessmentId,prompt:promptText,options,correct_option:answer-1,explanation,position:(existing?.[0]?.position||0)+1});
+  if(error){toast('Question could not be saved: '+error.message,'error');if(submit)submit.disabled=false;return}
+  closeAcademyEditor();toast('Assessment question saved.','success');await viewLearningCourse(courseId);if(addAnother)addAssessmentQuestion(assessmentId,courseId);return;
+ }
+ if(submit)submit.disabled=false;toast('This Academy editor action is not recognised.','error');
+}
+
 async function viewLearningCourse(courseId){
  const {data:course,error}=await sb.from('courses').select('id,title,description,instructor_id').eq('id',courseId).single();if(error||!course){toast('Course unavailable.','error');return}
  const {data:lessons}=await sb.from('course_lessons').select('id,title,description,content,position,is_published').eq('course_id',courseId).order('position');
@@ -1752,31 +1787,16 @@ async function publishLearningCourse(courseId){
 }
 
 
-async function createCourseAssessment(courseId){
- if(!STATE.currentUser)return;
- const title=prompt('Assessment title:');if(!title?.trim())return;
- const description=prompt('Assessment instructions (optional):')||'';
- const pass=Number(prompt('Pass percentage (default 70):','70')||70);
- if(!Number.isInteger(pass)||pass<1||pass>100){toast('Pass percentage must be between 1 and 100.','error');return}
- const {data,error}=await sb.from('course_assessments').insert({course_id:courseId,title:title.trim(),description,pass_percentage:pass,is_published:false}).select('id').single();
- if(error){toast('Assessment could not be created: '+error.message,'error');return}
- toast('Assessment draft created. Add questions next.','success');
- await addAssessmentQuestion(data.id,courseId);
+function createCourseAssessment(courseId){
+ if(!STATE.currentUser){openAuth('login');return}
+ openAcademyEditor({title:'Create an assessment',description:'Set the assessment instructions and the minimum passing score. You can add questions before publishing.',action:'assessment',courseId,fields:'<label>Assessment title<input name="title" maxlength="160" required placeholder="e.g. Nigerian cuisine fundamentals"></label><label>Instructions (optional)<textarea name="description" maxlength="1500" rows="3" placeholder="Explain what learners should know before starting."></textarea></label><label>Pass percentage<input name="pass" type="number" min="1" max="100" step="1" value="70" required></label>'});
 }
-async function addAssessmentQuestion(assessmentId,courseId){
- const promptText=prompt('Question text:');if(!promptText?.trim())return;
- const raw=prompt('Enter 2–6 answer options separated by | (example: Option A | Option B | Option C):');if(!raw)return;
- const options=raw.split('|').map(x=>x.trim()).filter(Boolean);
- if(options.length<2||options.length>6){toast('Provide between 2 and 6 options.','error');return}
- const answer=Number(prompt('Which option is correct? Enter its number (starting at 1):','1'));
- if(!Number.isInteger(answer)||answer<1||answer>options.length){toast('Correct option number is invalid.','error');return}
- const explanation=prompt('Explanation (optional):')||'';
- const {data:existing}=await sb.from('assessment_questions').select('position').eq('assessment_id',assessmentId).order('position',{ascending:false}).limit(1);
- const {error}=await sb.from('assessment_questions').insert({assessment_id:assessmentId,prompt:promptText.trim(),options,correct_option:answer-1,explanation,position:(existing?.[0]?.position||0)+1});
- if(error){toast('Question could not be saved: '+error.message,'error');return}
- if(confirm('Question saved. Add another question?')){await addAssessmentQuestion(assessmentId,courseId);return}
- await viewLearningCourse(courseId);
+
+function addAssessmentQuestion(assessmentId,courseId){
+ if(!STATE.currentUser){openAuth('login');return}
+ openAcademyEditor({title:'Add an assessment question',description:'Enter between two and six answer options, one per line. The correct option number starts at 1.',action:'question',courseId,assessmentId,fields:'<label>Question<textarea name="prompt" maxlength="1200" rows="3" required placeholder="Write the question…"></textarea></label><label>Answer options (one per line)<textarea name="options" maxlength="1800" rows="5" required placeholder="Option A&#10;Option B&#10;Option C"></textarea></label><label>Correct option number<input name="answer" type="number" min="1" max="6" step="1" value="1" required></label><label>Explanation (optional)<textarea name="explanation" maxlength="1200" rows="3" placeholder="Explain why the answer is correct."></textarea></label><label class="academy-check"><input name="addAnother" type="checkbox" value="yes"> Add another question after saving</label>'});
 }
+
 async function publishCourseAssessment(assessmentId,courseId){
  const {data:questions,error:readError}=await sb.from('assessment_questions').select('id').eq('assessment_id',assessmentId);
  if(readError||!questions?.length){toast('Add at least one question before publishing.','error');return}
