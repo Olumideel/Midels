@@ -1762,18 +1762,59 @@ async function submitAcademyEditor(event){
 }
 
 async function viewLearningCourse(courseId){
- const {data:course,error}=await sb.from('courses').select('id,title,description,instructor_id').eq('id',courseId).single();if(error||!course){toast('Course unavailable.','error');return}
- const {data:lessons}=await sb.from('course_lessons').select('id,title,description,content,position,is_published').eq('course_id',courseId).order('position');
- const {data:enrol}=STATE.currentUser?await sb.from('enrollments').select('id').eq('course_id',courseId).eq('student_id',STATE.currentUser.id).is('revoked_at',null).maybeSingle():{data:null};
- const {data:assessments}=await sb.from('course_assessments').select('id,title,description,is_published,pass_percentage').eq('course_id',courseId).order('created_at');
  const host=document.getElementById('learning-student-dashboard');if(!host)return;
- const lessonMarkup=(lessons||[]).map(l=>'<div class="learn-lesson"><span><strong>'+escHTML(l.title)+'</strong><br>'+escHTML(l.content||l.description||'')+'</span>'+(enrol&&l.is_published?'<button class="btn bo" onclick="completeLearningLesson(\''+escHTML(enrol.id)+'\',\''+escHTML(l.id)+'\')">Complete</button>':(course.instructor_id===STATE.currentUser?.id&&!l.is_published?'<button class="btn bo" onclick="publishLearningLesson(\''+escHTML(l.id)+'\',\''+escHTML(courseId)+'\')">Publish lesson</button>':''))+'</div>').join('');
- const assessmentMarkup=(assessments||[]).map(a=>'<div class="learn-lesson"><span><strong>'+escHTML(a.title)+'</strong><br><small>Pass mark: '+Number(a.pass_percentage)+'%</small></span>'+(enrol&&a.is_published?'<button class="btn bo" onclick="startCourseAssessment(\''+escHTML(a.id)+'\')">Take assessment</button>':(course.instructor_id===STATE.currentUser?.id?'<div class="learn-actions"><button class="btn bo" onclick="addAssessmentQuestion(\''+escHTML(a.id)+'\',\''+escHTML(courseId)+'\')">Add question</button>'+(a.is_published?'':'<button class="btn bp" onclick="publishCourseAssessment(\''+escHTML(a.id)+'\',\''+escHTML(courseId)+'\')">Publish assessment</button>')+'</div>':''))+'</div>').join('');
- host.innerHTML='<div class="learn-course"><h4>'+escHTML(course.title)+'</h4><p class="learn-muted">'+escHTML(course.description||'')+'</p><h4>Lessons</h4>'+(lessonMarkup||'<p class="learn-muted">No lessons have been added yet.</p>')+'<h4 style="margin-top:18px">Assessments</h4>'+(assessmentMarkup||'<p class="learn-muted">No assessments published yet.</p>')+(enrol?'<div class="learn-actions"><button class="btn bp" onclick="requestCourseCertificate(\''+escHTML(enrol.id)+'\')">Request certificate</button></div>':'')+'<button class="btn bo" onclick="loadLearningDashboard()">Back to dashboard</button></div>';
+ host.innerHTML='<p class="learn-muted">Loading course…</p>';
+ const {data:course,error:courseError}=await sb.from('courses').select('id,title,description,instructor_id').eq('id',courseId).single();
+ if(courseError||!course){host.innerHTML='<div class="learn-course"><p class="learn-muted">This course is unavailable.</p><button class="btn bo" onclick="loadLearningDashboard()">Back to dashboard</button></div>';return}
+ const [lessonResult,enrolResult,assessmentResult]=await Promise.all([
+  sb.from('course_lessons').select('id,title,description,content,position,is_published,duration_minutes').eq('course_id',courseId).order('position'),
+  STATE.currentUser?sb.from('enrollments').select('id').eq('course_id',courseId).eq('student_id',STATE.currentUser.id).is('revoked_at',null).maybeSingle():Promise.resolve({data:null,error:null}),
+  sb.from('course_assessments').select('id,title,description,is_published,pass_percentage').eq('course_id',courseId).order('created_at')
+ ]);
+ if(lessonResult.error||assessmentResult.error){host.innerHTML='<div class="learn-course"><p class="learn-muted">Course materials could not be loaded. Please try again.</p><button class="btn bo" onclick="loadLearningDashboard()">Back to dashboard</button></div>';return}
+ const isInstructor=!!STATE.currentUser&&course.instructor_id===STATE.currentUser.id;
+ const enrol=enrolResult.data;
+ const lessons=(lessonResult.data||[]).filter(l=>l.is_published||isInstructor);
+ const assessments=(assessmentResult.data||[]).filter(a=>a.is_published||isInstructor);
+ let completed=new Set(),attempts=[],certificate=null;
+ if(enrol&&STATE.currentUser){
+  const assessmentIds=assessments.filter(a=>a.is_published).map(a=>a.id);
+  const reads=[
+   sb.from('lesson_progress').select('lesson_id').eq('enrollment_id',enrol.id).eq('student_id',STATE.currentUser.id),
+   assessmentIds.length?sb.from('assessment_attempts').select('assessment_id,score_percentage,passed,submitted_at').eq('student_id',STATE.currentUser.id).in('assessment_id',assessmentIds).order('submitted_at',{ascending:false}):Promise.resolve({data:[],error:null}),
+   sb.from('course_certificates').select('certificate_code,issued_at,revoked_at').eq('enrollment_id',enrol.id).eq('student_id',STATE.currentUser.id).is('revoked_at',null).maybeSingle()
+  ];
+  const [progressResult,attemptResult,certificateResult]=await Promise.all(reads);
+  if(progressResult.error||attemptResult.error||certificateResult.error){host.innerHTML='<div class="learn-course"><p class="learn-muted">Your learning record could not be loaded. Please refresh the course later.</p><button class="btn bo" onclick="loadLearningDashboard()">Back to dashboard</button></div>';return}
+  completed=new Set((progressResult.data||[]).map(p=>p.lesson_id));
+  attempts=attemptResult.data||[];
+  certificate=certificateResult.data||null;
+ }
+ const publishedLessons=lessons.filter(l=>l.is_published),doneCount=publishedLessons.filter(l=>completed.has(l.id)).length;
+ const progressPct=publishedLessons.length?Math.round(doneCount/publishedLessons.length*100):0;
+ const latestAttempts=new Map();attempts.forEach(a=>{if(!latestAttempts.has(a.assessment_id))latestAttempts.set(a.assessment_id,a)});
+ const publishedAssessments=assessments.filter(a=>a.is_published);
+ const allAssessmentsPassed=publishedAssessments.every(a=>latestAttempts.get(a.id)?.passed===true);
+ const allLessonsDone=publishedLessons.length>0&&doneCount===publishedLessons.length;
+ const lessonMarkup=lessons.length?lessons.map((l,i)=>{
+  const isDone=completed.has(l.id);
+  const detail=(l.content||l.description||'').trim();
+  return '<article class="academy-learning-item"><div class="academy-learning-item-head"><span class="academy-step">'+(i+1)+'</span><div class="academy-learning-item-copy"><strong>'+escHTML(l.title)+'</strong><p class="learn-muted">'+(l.duration_minutes?Number(l.duration_minutes)+' min · ':'')+(isDone?'Completed':l.is_published?'Lesson':'Draft lesson')+'</p></div><span class="academy-status '+(isDone?'is-done':'')+'">'+(isDone?'Complete':l.is_published?'Available':'Draft')+'</span></div>'+(detail?'<div class="academy-learning-content">'+escHTML(detail).replace(/\n/g,'<br>')+'</div>':'')+(enrol&&l.is_published?'<div class="learn-actions"><button class="btn '+(isDone?'bo':'bp')+'" '+(isDone?'disabled':'')+' onclick="completeLearningLesson(\''+escHTML(enrol.id)+'\',\''+escHTML(l.id)+'\')">'+(isDone?'Lesson completed':'Mark lesson complete')+'</button></div>':(isInstructor&&!l.is_published?'<div class="learn-actions"><button class="btn bo" onclick="publishLearningLesson(\''+escHTML(l.id)+'\',\''+escHTML(courseId)+'\')">Publish lesson</button></div>':''))+'</article>';
+ }).join(''):'<p class="learn-muted">No lessons have been added yet.</p>';
+ const assessmentMarkup=assessments.length?assessments.map(a=>{
+  const last=latestAttempts.get(a.id),attemptCount=attempts.filter(x=>x.assessment_id===a.id).length;
+  const outcome=last?'<p class="learn-meta">Latest result: <strong>'+Number(last.score_percentage).toFixed(1)+'%</strong> · '+(last.passed?'Passed':'Not passed')+' · '+attemptCount+' attempt'+(attemptCount===1?'':'s')+'</p>':'<p class="learn-muted">Not attempted yet</p>';
+  return '<article class="academy-learning-item"><div class="academy-learning-item-head"><div class="academy-learning-item-copy"><strong>'+escHTML(a.title)+'</strong><p class="learn-muted">Pass mark: '+Number(a.pass_percentage)+'%</p></div><span class="academy-status '+(last?.passed?'is-done':'')+'">'+(last?.passed?'Passed':a.is_published?'Assessment':'Draft')+'</span></div>'+(a.description?'<p class="learn-muted">'+escHTML(a.description)+'</p>':'')+(enrol&&a.is_published?outcome+'<div class="learn-actions"><button class="btn bp" onclick="startCourseAssessment(\''+escHTML(a.id)+'\',\''+escHTML(courseId)+'\')">'+(last?'Retake assessment':'Start assessment')+'</button></div>':(isInstructor?'<div class="learn-actions"><button class="btn bo" onclick="addAssessmentQuestion(\''+escHTML(a.id)+'\',\''+escHTML(courseId)+'\')">Add question</button>'+(a.is_published?'':'<button class="btn bp" onclick="publishCourseAssessment(\''+escHTML(a.id)+'\',\''+escHTML(courseId)+'\')">Publish assessment</button>')+'</div>':''))+'</article>';
+ }).join(''):'<p class="learn-muted">No assessments have been added yet.</p>';
+ const certMarkup=certificate?'<section class="academy-certificate-preview"><span class="lbl">Course completion</span><h4>Certificate issued</h4><p class="learn-muted">Issued '+new Date(certificate.issued_at).toLocaleDateString()+'</p><p>Certificate code: <strong>'+escHTML(certificate.certificate_code)+'</strong></p><div class="learn-actions"><button class="btn bo" onclick="GenUICopyCertificateCode(\''+escHTML(certificate.certificate_code)+'\')">Copy certificate code</button><a class="btn bo" href="#certificate-verification">Verify certificate</a></div></section>':(enrol?'<section class="academy-certificate-preview"><h4>Course certificate</h4><p class="learn-muted">'+(allLessonsDone&&allAssessmentsPassed?'You have met the visible course requirements. Request your certificate when ready.':'Complete all published lessons and pass each published assessment to become eligible.')+'</p><button class="btn bp" '+(allLessonsDone&&allAssessmentsPassed?'':'disabled')+' onclick="requestCourseCertificate(\''+escHTML(enrol.id)+'\')">Request certificate</button></section>':'');
+ host.innerHTML='<div class="learn-course academy-course-view"><button class="btn bo" onclick="loadLearningDashboard()">← Back to dashboard</button><h3>'+escHTML(course.title)+'</h3><p class="learn-muted">'+escHTML(course.description||'')+'</p>'+(enrol?'<section class="academy-progress-panel"><div class="academy-progress-heading"><strong>Your course progress</strong><strong>'+progressPct+'%</strong></div><div class="learn-progress" role="progressbar" aria-label="Course lesson progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+progressPct+'"><span style="width:'+progressPct+'%"></span></div><p class="learn-muted">'+doneCount+' of '+publishedLessons.length+' published lessons completed</p></section>':'')+'<h4>Lessons</h4><div class="academy-learning-list">'+lessonMarkup+'</div><h4 class="academy-section-heading">Assessments</h4><div class="academy-learning-list">'+assessmentMarkup+'</div>'+certMarkup+'</div>';
 }
 async function completeLearningLesson(enrollmentId,lessonId){
+ if(!STATE.currentUser){openAuth('login');return}
  const {error}=await sb.from('lesson_progress').upsert({student_id:STATE.currentUser.id,enrollment_id:enrollmentId,lesson_id:lessonId},{onConflict:'student_id,enrollment_id,lesson_id'});
- if(error){toast('Progress could not be saved: '+error.message,'error');return}toast('Lesson completed.','success');await loadLearningDashboard();
+ if(error){toast('Progress could not be saved: '+error.message,'error');return}
+ toast('Lesson completed.','success');await viewLearningCourse((await sb.from('enrollments').select('course_id').eq('id',enrollmentId).single()).data?.course_id);
+ await loadLearningDashboard();
 }
 async function publishLearningLesson(lessonId,courseId){
  const {error}=await sb.from('course_lessons').update({is_published:true}).eq('id',lessonId);
@@ -1804,20 +1845,22 @@ async function publishCourseAssessment(assessmentId,courseId){
  if(error){toast('Could not publish assessment: '+error.message,'error');return}
  toast('Assessment published and locked against further edits.','success');await viewLearningCourse(courseId);
 }
-async function startCourseAssessment(assessmentId){
+async function startCourseAssessment(assessmentId,courseId){
  const {data,error}=await sb.rpc('get_assessment_for_student',{p_assessment_id:assessmentId});
  if(error){toast('Assessment unavailable: '+error.message,'error');return}
- if(!data.questions?.length){toast('This assessment has no questions yet.','error');return}
- const host=document.getElementById('learning-student-dashboard');
- host.innerHTML='<div class="learn-course"><h3>'+escHTML(data.title)+'</h3><p class="learn-muted">'+escHTML(data.description||'')+' · Pass mark '+Number(data.pass_percentage)+'%</p><form id="course-assessment-form" onsubmit="submitCourseAssessment(event,\''+escHTML(assessmentId)+'\')">'+data.questions.map((q,i)=>'<fieldset style="border:0;border-top:1px solid var(--border);padding:14px 0"><legend><strong>'+(i+1)+'. '+escHTML(q.prompt)+'</strong></legend>'+q.options.map((o,n)=>'<label style="display:block;margin:8px 0;font-weight:400"><input type="radio" name="q_'+escHTML(q.id)+'" value="'+n+'" required> '+escHTML(o)+'</label>').join('')+'</fieldset>').join('')+'<button class="btn bp" type="submit">Submit answers</button></form><button class="btn bo" onclick="loadLearningDashboard()">Exit assessment</button></div>';
+ if(!data?.questions?.length){toast('This assessment has no questions yet.','error');return}
+ const host=document.getElementById('learning-student-dashboard');if(!host)return;
+ host.innerHTML='<div class="learn-course"><button class="btn bo" onclick="viewLearningCourse(\''+escHTML(courseId||'')+'\')">← Back to course</button><h3>'+escHTML(data.title)+'</h3><p class="learn-muted">'+escHTML(data.description||'')+' · Pass mark '+Number(data.pass_percentage)+'%</p><form id="course-assessment-form" onsubmit="submitCourseAssessment(event,\''+escHTML(assessmentId)+'\',\''+escHTML(courseId||'')+'\')">'+data.questions.map((q,i)=>'<fieldset class="academy-question"><legend><strong>'+(i+1)+'. '+escHTML(q.prompt)+'</strong></legend>'+q.options.map((o,n)=>'<label><input type="radio" name="q_'+escHTML(q.id)+'" value="'+n+'" required> '+escHTML(o)+'</label>').join('')+'</fieldset>').join('')+'<button class="btn bp" type="submit">Submit answers</button></form></div>';
 }
-async function submitCourseAssessment(event,assessmentId){
+async function submitCourseAssessment(event,assessmentId,courseId){
  event.preventDefault();const form=event.currentTarget,answers={};
+ const submit=form.querySelector('button[type="submit"]');if(submit)submit.disabled=true;
  form.querySelectorAll('input[type="radio"]:checked').forEach(input=>{const id=input.name.slice(2);answers[id]=Number(input.value)});
  const {data,error}=await sb.rpc('submit_course_assessment',{p_assessment_id:assessmentId,p_answers:answers});
- if(error){toast('Submission failed: '+error.message,'error');return}
- const host=document.getElementById('learning-student-dashboard');
- host.innerHTML='<div class="learn-course"><h3>Assessment result</h3><p class="learn-meta">Score: <strong>'+Number(data.score_percentage).toFixed(2)+'%</strong> · '+data.correct+'/'+data.total+' correct</p><p>'+(data.passed?'You passed. Well done!':'Not passed yet. Review the lessons and try again.')+'</p><p class="learn-muted">Required pass mark: '+Number(data.pass_percentage)+'%</p><button class="btn bo" onclick="loadLearningDashboard()">Return to dashboard</button></div>';
+ if(error){toast('Submission failed: '+error.message,'error');if(submit)submit.disabled=false;return}
+ const host=document.getElementById('learning-student-dashboard');if(!host)return;
+ const passed=!!data.passed,score=Number(data.score_percentage);
+ host.innerHTML='<div class="learn-course academy-result-card"><span class="lbl">Assessment result</span><h3>'+(passed?'Well done — you passed':'Keep practising')+'</h3><p class="academy-result-score">'+score.toFixed(1)+'%</p><p class="learn-meta">'+Number(data.correct)+' of '+Number(data.total)+' answers correct</p><p>'+(passed?'You have met the required pass mark.':'You have not reached the required pass mark yet. Review the course lessons and try again.')+'</p><p class="learn-muted">Required pass mark: '+Number(data.pass_percentage)+'%</p><div class="learn-actions"><button class="btn bp" onclick="startCourseAssessment(\''+escHTML(assessmentId)+'\',\''+escHTML(courseId||'')+'\')">Try again</button><button class="btn bo" onclick="viewLearningCourse(\''+escHTML(courseId||'')+'\')">Return to course</button></div></div>';
 }
 async function requestCourseCertificate(enrollmentId){
  const {data,error}=await sb.rpc('issue_course_certificate',{p_enrollment_id:enrollmentId});
