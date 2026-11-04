@@ -137,44 +137,27 @@ async function signupUser() {
 }
 
 async function loginUser() {
-  const emailInput = document.getElementById('auth-email');
-  const passwordInput = document.getElementById('auth-password');
-  const button = document.querySelector('#auth-login-form .auth-submit');
-  const email = emailInput?.value.trim() || '';
-  const pass = passwordInput?.value || '';
+  const email = document.getElementById('auth-email').value.trim();
+  const pass  = document.getElementById('auth-password').value;
   if (!email || !pass) { toast('Please fill in all fields', 'error'); return; }
-  if (button?.disabled) return;
 
-  const originalLabel = button?.textContent || 'Log In →';
-  if (button) { button.disabled = true; button.textContent = 'Signing in…'; }
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
 
-  try {
-    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
-    if (error) {
-      toast(error.message === 'Invalid login credentials' ? 'Incorrect email or password' : 'Sign-in failed: ' + error.message, 'error');
-      return;
-    }
-    if (!data?.user?.id) {
-      toast('Sign-in did not return an account session. Please try again.', 'error');
-      return;
-    }
-
-    const profile = await loadCurrentProfile(data.user.id);
-    if (!profile) {
-      toast('Your account was authenticated, but its profile could not be loaded. Please try again shortly.', 'error');
-      return;
-    }
-
-    closeAuth();
-    await onLogin();
-    const firstName = (profile.name || profile.display_name || profile.full_name || 'there').trim().split(/\s+/)[0];
-    toast(`Welcome back, ${firstName}! 👋`, 'success');
-  } catch (error) {
-    console.error('Login flow failed:', error);
-    toast('Sign-in could not complete because of a connection or app error. Check your internet connection and try again.', 'error');
-  } finally {
-    if (button) { button.disabled = false; button.textContent = originalLabel; }
+  if (error) {
+    toast(error.message === 'Invalid login credentials' ? 'Incorrect email or password' : error.message, 'error');
+    return;
   }
+
+  const profile = await loadCurrentProfile(data.user.id);
+  if (!profile) {
+    toast('Signed in, but your profile could not be loaded. Please try again or contact support.', 'error');
+    return;
+  }
+
+  closeAuth();
+  await onLogin();
+  const firstName = (profile.name || profile.display_name || profile.full_name || 'there').trim().split(/\s+/)[0];
+  toast(`Welcome back, ${firstName}! 👋`, 'success');
 }
 
 async function sendPasswordResetEmail() {
