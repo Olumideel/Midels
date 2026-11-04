@@ -1725,7 +1725,17 @@ async function createLearningCourse(event){
 }
 function addLearningLesson(courseId){
  if(!STATE.currentUser){openAuth('login');return}
- openAcademyEditor({title:'Add a lesson',description:'Create a structured lesson for your course. It will remain a draft until you publish it.',action:'lesson',courseId,fields:'<label>Lesson title<input name="title" maxlength="160" required placeholder="e.g. Preparing a classic Nigerian stock"></label><label>Short description (optional)<textarea name="description" maxlength="500" rows="2" placeholder="What will this lesson cover?"></textarea></label><label>Lesson notes or teaching content<textarea name="content" maxlength="12000" rows="7" placeholder="Write the lesson material here…"></textarea></label>'});
+ openAcademyEditor({title:'Add a lesson',description:'Create a structured lesson for your course. It will remain a draft until you publish it.',action:'lesson',courseId,fields:'<label>Lesson title<input name="title" maxlength="160" required placeholder="e.g. Preparing a classic Nigerian stock"></label><label>Short description (optional)<textarea name="description" maxlength="500" rows="2" placeholder="What will this lesson cover?"></textarea></label><label>Lesson notes or teaching content<textarea name="content" maxlength="12000" rows="7" placeholder="Write the lesson material here…"></textarea></label><label>Estimated duration in minutes (optional)<input name="duration" type="number" min="1" max="600" step="1" placeholder="e.g. 20"></label>'});
+}
+
+async function openLearningLessonEditor(lessonId,courseId){
+ if(!STATE.currentUser){openAuth('login');return}
+ const {data:course,error:courseError}=await sb.from('courses').select('id').eq('id',courseId).eq('instructor_id',STATE.currentUser.id).maybeSingle();
+ if(courseError||!course){toast('You can only edit lessons in your own courses.','error');return}
+ const {data:lesson,error}=await sb.from('course_lessons').select('id,title,description,content,duration_minutes,is_published').eq('id',lessonId).eq('course_id',courseId).eq('is_published',false).maybeSingle();
+ if(error||!lesson){toast('This lesson is no longer an editable draft. Refresh the course and try again.','error');return}
+ const duration=lesson.duration_minutes?String(lesson.duration_minutes):'';
+ openAcademyEditor({title:'Edit lesson',description:'Update this unpublished lesson. Changes are saved to your course draft; published lessons remain unchanged.',action:'lessonEdit',courseId,lessonId,fields:'<label>Lesson title<input name="title" maxlength="160" required value="'+escHTML(lesson.title||'')+'"></label><label>Short description (optional)<textarea name="description" maxlength="500" rows="2">'+escHTML(lesson.description||'')+'</textarea></label><label>Lesson notes or teaching content<textarea name="content" maxlength="12000" rows="7">'+escHTML(lesson.content||'')+'</textarea></label><label>Estimated duration in minutes (optional)<input name="duration" type="number" min="1" max="600" step="1" value="'+escHTML(duration)+'" placeholder="e.g. 20"></label>'});
 }
 
 async function enrolLearningCourse(courseId){
@@ -1745,7 +1755,7 @@ async function enrolLearningCourse(courseId){
 }
 function openAcademyEditor(config){
  const host=document.getElementById('academy-editor');if(!host)return;
- host.innerHTML='<div class="academy-editor-backdrop" role="presentation"><section class="academy-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="academy-editor-title" aria-describedby="academy-editor-description"><div class="academy-editor-heading"><div><h3 id="academy-editor-title">'+escHTML(config.title)+'</h3><p id="academy-editor-description">'+escHTML(config.description)+'</p></div><button type="button" class="academy-editor-close" onclick="closeAcademyEditor()" aria-label="Close editor">×</button></div><form id="academy-editor-form" data-action="'+escHTML(config.action)+'" data-course-id="'+escHTML(config.courseId||'')+'" data-assessment-id="'+escHTML(config.assessmentId||'')+'" onsubmit="submitAcademyEditor(event)">'+config.fields+'<div class="academy-editor-actions"><button type="button" class="btn bo" onclick="closeAcademyEditor()">Cancel</button><button type="submit" class="btn bp">Save draft</button></div></form></section></div>';
+ host.innerHTML='<div class="academy-editor-backdrop" role="presentation"><section class="academy-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="academy-editor-title" aria-describedby="academy-editor-description"><div class="academy-editor-heading"><div><h3 id="academy-editor-title">'+escHTML(config.title)+'</h3><p id="academy-editor-description">'+escHTML(config.description)+'</p></div><button type="button" class="academy-editor-close" onclick="closeAcademyEditor()" aria-label="Close editor">×</button></div><form id="academy-editor-form" data-action="'+escHTML(config.action)+'" data-course-id="'+escHTML(config.courseId||'')+'" data-assessment-id="'+escHTML(config.assessmentId||'')+'" data-lesson-id="'+escHTML(config.lessonId||'')+'" onsubmit="submitAcademyEditor(event)">'+config.fields+'<div class="academy-editor-actions"><button type="button" class="btn bo" onclick="closeAcademyEditor()">Cancel</button><button type="submit" class="btn bp">Save draft</button></div></form></section></div>';
  host.hidden=false;const first=host.querySelector('input:not([type=checkbox]),textarea');if(first)first.focus();
 }
 function closeAcademyEditor(){const host=document.getElementById('academy-editor');if(host){host.hidden=true;host.innerHTML=''}}
@@ -1768,13 +1778,20 @@ async function submitAcademyEditor(event){
   closeAcademyEditor();toast('Course details saved successfully.','success');await loadLearningDashboard();await viewLearningCourse(courseId);return;
  }
  if(action==='lesson'){
-  const title=String(values.get('title')||'').trim(),description=String(values.get('description')||'').trim(),content=String(values.get('content')||'').trim();
-  if(!title){toast('Enter a lesson title.','error');if(submit)submit.disabled=false;return}
+  const title=String(values.get('title')||'').trim(),description=String(values.get('description')||'').trim(),content=String(values.get('content')||'').trim(),durationRaw=String(values.get('duration')||'').trim(),duration=durationRaw?Number(durationRaw):null;
+  if(!title||title.length>160||!Number.isInteger(duration===null?1:duration)||duration!==null&&(duration<1||duration>600)){toast('Enter a lesson title and a valid duration from 1 to 600 minutes, or leave duration blank.','error');if(submit)submit.disabled=false;return}
   const {data:rows,error:positionError}=await sb.from('course_lessons').select('position').eq('course_id',courseId).order('position',{ascending:false}).limit(1);
   if(positionError){toast('Could not prepare the lesson: '+positionError.message,'error');if(submit)submit.disabled=false;return}
-  const {error}=await sb.from('course_lessons').insert({course_id:courseId,title,description,content,position:(rows?.[0]?.position||0)+1,is_published:false});
+  const {error}=await sb.from('course_lessons').insert({course_id:courseId,title,description:description||null,content:content||null,duration_minutes:duration,position:(rows?.[0]?.position||0)+1,is_published:false});
   if(error){toast('Lesson could not be added: '+error.message,'error');if(submit)submit.disabled=false;return}
   closeAcademyEditor();toast('Lesson draft added.','success');await viewLearningCourse(courseId);return;
+ }
+ if(action==='lessonEdit'){
+  const lessonId=form.dataset.lessonId,title=String(values.get('title')||'').trim(),description=String(values.get('description')||'').trim(),content=String(values.get('content')||'').trim(),durationRaw=String(values.get('duration')||'').trim(),duration=durationRaw?Number(durationRaw):null;
+  if(!lessonId||!title||title.length>160||duration!==null&&(!Number.isInteger(duration)||duration<1||duration>600)){toast('Enter a lesson title and a valid duration from 1 to 600 minutes, or leave duration blank.','error');if(submit)submit.disabled=false;return}
+  const {data:updated,error}=await sb.from('course_lessons').update({title,description:description||null,content:content||null,duration_minutes:duration}).eq('id',lessonId).eq('course_id',courseId).eq('is_published',false).select('id').maybeSingle();
+  if(error||!updated){toast(error?'Lesson could not be saved: '+error.message:'This lesson is no longer an editable draft. Refresh and try again.','error');if(submit)submit.disabled=false;return}
+  closeAcademyEditor();toast('Lesson changes saved.','success');await viewLearningCourse(courseId);return;
  }
  if(action==='assessment'){
   const title=String(values.get('title')||'').trim(),description=String(values.get('description')||'').trim(),pass=Number(values.get('pass'));
@@ -1833,7 +1850,8 @@ async function viewLearningCourse(courseId){
  const lessonMarkup=lessons.length?lessons.map((l,i)=>{
   const isDone=completed.has(l.id);
   const detail=(l.content||l.description||'').trim();
-  return '<article class="academy-learning-item"><div class="academy-learning-item-head"><span class="academy-step">'+(i+1)+'</span><div class="academy-learning-item-copy"><strong>'+escHTML(l.title)+'</strong><p class="learn-muted">'+(l.duration_minutes?Number(l.duration_minutes)+' min · ':'')+(isDone?'Completed':l.is_published?'Lesson':'Draft lesson')+'</p></div><span class="academy-status '+(isDone?'is-done':'')+'">'+(isDone?'Complete':l.is_published?'Available':'Draft')+'</span></div>'+(detail?'<div class="academy-learning-content">'+escHTML(detail).replace(/\n/g,'<br>')+'</div>':'')+(enrol&&l.is_published?'<div class="learn-actions"><button class="btn '+(isDone?'bo':'bp')+'" '+(isDone?'disabled':'')+' onclick="completeLearningLesson(\''+escHTML(enrol.id)+'\',\''+escHTML(l.id)+'\',\''+escHTML(courseId)+'\')">'+(isDone?'Lesson completed':'Mark lesson complete')+'</button></div>':(isInstructor&&!l.is_published?'<div class="learn-actions"><button class="btn bo" onclick="publishLearningLesson(\''+escHTML(l.id)+'\',\''+escHTML(courseId)+'\')">Publish lesson</button></div>':''))+'</article>';
+  const actions=enrol&&l.is_published?`<div class="learn-actions"><button class="btn ${isDone?'bo':'bp'}" ${isDone?'disabled':''} onclick="completeLearningLesson('${escHTML(enrol.id)}','${escHTML(l.id)}','${escHTML(courseId)}')">${isDone?'Lesson completed':'Mark lesson complete'}</button></div>`:(isInstructor&&!l.is_published?`<div class="learn-actions"><button class="btn bo" onclick="openLearningLessonEditor('${escHTML(l.id)}','${escHTML(courseId)}')">Edit lesson</button><button class="btn bp" onclick="publishLearningLesson('${escHTML(l.id)}','${escHTML(courseId)}')">Publish lesson</button></div>`:'');
+  return `<article class="academy-learning-item"><div class="academy-learning-item-head"><span class="academy-step">${i+1}</span><div class="academy-learning-item-copy"><strong>${escHTML(l.title)}</strong><p class="learn-muted">${l.duration_minutes?Number(l.duration_minutes)+' min · ':''}${isDone?'Completed':l.is_published?'Lesson':'Draft lesson'}</p></div><span class="academy-status ${isDone?'is-done':''}">${isDone?'Complete':l.is_published?'Available':'Draft'}</span></div>${detail?`<div class="academy-learning-content">${escHTML(detail).replace(/\n/g,'<br>')}</div>`:''}${actions}</article>`;
  }).join(''):'<p class="learn-muted">No lessons have been added yet.</p>';
  const assessmentMarkup=assessments.length?assessments.map(a=>{
   const last=latestAttempts.get(a.id),attemptCount=attempts.filter(x=>x.assessment_id===a.id).length;
