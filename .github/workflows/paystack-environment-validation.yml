@@ -6,7 +6,7 @@ on:
       - "supabase/functions/**"
       - "supabase/migrations/20261106141500_enforce_active_account_on_member_definer_rpcs.sql"
       - "supabase/migrations/20261106141600_restrict_backend_only_table_grants.sql"
-      - "supabase/migrations/20261106141700_require_paystack_provider_for_confirmation.sql"
+      - "supabase/migrations/20261106143600_require_paystack_provider_for_confirmation.sql"
       - "supabase/migrations/20261106130000_harden_paystack_refund_accounting.sql"
       - ".github/workflows/paystack-environment-validation.yml"
 permissions:
@@ -38,7 +38,7 @@ jobs:
           root = Path("supabase/migrations")
           member = (root / "20261106141500_enforce_active_account_on_member_definer_rpcs.sql").read_text().lower()
           grants = (root / "20261106141600_restrict_backend_only_table_grants.sql").read_text().lower()
-          provider = (root / "20261106141700_require_paystack_provider_for_confirmation.sql").read_text().lower()
+          provider = (root / "20261106143600_require_paystack_provider_for_confirmation.sql").read_text().lower()
           refunds = (root / "20261106130000_harden_paystack_refund_accounting.sql").read_text().lower()
 
           member_functions = [
