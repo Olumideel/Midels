@@ -85,6 +85,9 @@ jobs:
           assert "sum(amount_minor)" in refunds and "refunded_total > payment_row.amount_minor" in refunds, "Cumulative refunds must not exceed the original payment"
           assert "if fully_refunded then" in refunds, "Entitlement revocation must be gated on full refund"
           assert "set revoked_at = coalesce(revoked_at" in refunds, "Full refunds must revoke paid course access/certificates"
+          assert "set refunded_at = coalesce(refunded_at" in refunds, "Full refunds must mark digital-product purchases refunded"
+          assert "set status = 'cancelled'" in refunds and "provider_reference = p_transaction_reference" in refunds, "Full refunds must cancel the matching Paystack subscription"
+          assert "if fully_refunded then" in refunds, "Partial refunds must not enter the entitlement-revocation branch"
           assert "from public, anon, authenticated" in refunds and "to service_role" in refunds, "Refund RPC must remain service-role only"
           print("Database security and refund-accounting migration assertions passed.")
           PY
