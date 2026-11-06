@@ -145,7 +145,7 @@ serve(async req => {
 
     const { error: insertError } = await admin.from('payments').insert({
       user_id: user.id, provider: 'paystack', reference, amount_minor: amountMinor,
-      currency, status: 'pending', purpose, metadata
+      currency, status: 'pending', purpose, metadata: { ...metadata, paystack_mode: paystack.mode }
     })
     if (insertError) throw insertError
 

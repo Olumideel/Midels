@@ -45,6 +45,11 @@ serve(async req => {
         .eq('reference', charge.reference).maybeSingle()
       if (lookupError) throw lookupError
       if (!payment) return json({ received: true, processed: false })
+      if ((payment.metadata?.paystack_mode && payment.metadata.paystack_mode !== paystack.mode) ||
+          (paystack.mode === 'live' && payment.metadata?.paystack_mode !== 'live')) {
+        console.error('Webhook payment environment does not match the original checkout environment.')
+        return json({ received: true, processed: false })
+      }
       let metadataMatches = charge.metadata?.user_id === payment.user_id
       if (payment.purpose === 'product_purchase') {
         metadataMatches = metadataMatches &&

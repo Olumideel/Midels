@@ -46,6 +46,10 @@ serve(async req => {
       .eq('reference', reference).eq('user_id', user.id).maybeSingle()
     if (lookupError) throw lookupError
     if (!payment) return json({ error: 'Payment record not found.' }, 404)
+    if ((payment.metadata?.paystack_mode && payment.metadata.paystack_mode !== paystack.mode) ||
+        (paystack.mode === 'live' && payment.metadata?.paystack_mode !== 'live')) {
+      return json({ error: 'Payment was initialized in a different environment.' }, 409)
+    }
     if (payment.status === 'paid') return json({ status: 'paid', verified: true, purpose: payment.purpose })
     if (payment.status !== 'pending') return json({ status: payment.status, verified: false, purpose: payment.purpose })
     const response = await fetch('https://api.paystack.co/transaction/verify/' + encodeURIComponent(reference), {
@@ -57,8 +61,8 @@ serve(async req => {
     }
     const charge = result.data
     if (charge.domain !== paystack.expectedDomain) {
-      console.error('Paystack verification returned a non-test transaction; no entitlement was granted.')
-      return json({ error: 'Only Paystack test-mode transactions can be verified for this application.' }, 409)
+      console.error('Paystack verification returned a transaction from the wrong environment; no entitlement was granted.')
+      return json({ error: 'The payment environment did not match this application configuration.' }, 409)
     }
     if (charge.status !== 'success') return json({ status: charge.status || 'pending', verified: false, purpose: payment.purpose })
 
