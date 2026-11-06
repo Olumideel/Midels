@@ -1704,7 +1704,7 @@ async function loadLearningDashboard(){
  }
  const dashboard=document.getElementById('learning-student-dashboard'),instructor=document.getElementById('learning-instructor-courses');
  if(!STATE.currentUser){dashboard.textContent='Sign in to view your learning progress.';instructor.textContent='Sign in to manage courses.';return}
- const [enrolments,own]=await Promise.all([sb.from('enrollments').select('id,course_id,courses(title)').eq('student_id',STATE.currentUser.id).is('revoked_at',null),sb.from('courses').select('id,title,description,cover_url,price_minor,currency,is_published').eq('instructor_id',STATE.currentUser.id)]);
+ const [enrolments,own]=await Promise.all([sb.from('enrollments').select('id,course_id,courses(title,cover_url)').eq('student_id',STATE.currentUser.id).is('revoked_at',null),sb.from('courses').select('id,title,description,cover_url,price_minor,currency,is_published').eq('instructor_id',STATE.currentUser.id)]);
  if(enrolments.error)dashboard.textContent='Unable to load enrolments.';else if(!enrolments.data?.length)dashboard.innerHTML='<p class="learn-muted">You have not enrolled in a course yet.</p>';else{
   const [progressResult,lessonResult,assessmentResult]=await Promise.all([
    sb.from('lesson_progress').select('enrollment_id,lesson_id').eq('student_id',STATE.currentUser.id),
