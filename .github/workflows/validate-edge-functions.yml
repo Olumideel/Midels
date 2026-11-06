@@ -1,0 +1,33 @@
+name: Supabase Edge Function validation
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "supabase/functions/**"
+      - ".github/workflows/validate-edge-functions.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  type-check-payment-functions:
+    name: Type-check Paystack Edge Functions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Type-check payment functions
+        run: |
+          deno check supabase/functions/create-payment/index.ts
+          deno check supabase/functions/verify-payment/index.ts
+          deno check supabase/functions/paystack-webhook/index.ts
+          deno test supabase/functions/_shared/paystack/config_test.ts
+          deno test supabase/functions/paystack-webhook/signature_test.ts
