@@ -332,7 +332,22 @@ async function handlePaymentReturn() {
     }
   } catch (error) {
     console.error('Payment return verification failed:', error);
-    toast('We could not verify the payment just yet. Please refresh your account shortly.', 'error');
+    let verificationDetails = null;
+    try {
+      if (error?.context && typeof error.context.clone === 'function') {
+        verificationDetails = await error.context.clone().json();
+      }
+    } catch (_) {
+      // Preserve the generic fallback when the function response is not JSON.
+    }
+    if (verificationDetails?.status === 'paid' && verificationDetails?.verified === false) {
+      toast(
+        `Paystack confirms payment ${reference} was settled, but access is not available yet. Please contact support and quote this reference.`,
+        'error'
+      );
+    } else {
+      toast('We could not verify the payment just yet. Please refresh your account shortly.', 'error');
+    }
   } finally {
     url.searchParams.delete('payment');
     url.searchParams.delete('reference');
