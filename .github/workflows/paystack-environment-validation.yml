@@ -74,6 +74,8 @@ jobs:
           assert "and s.plan_code=payment_row.metadata->>'plan_code'" in provider, "Paid subscription retries must verify the purchased plan"
           assert "s.status in ('active','trialing','past_due')" in provider, "Paid subscription retries must require an active entitlement state"
           assert "e.revoked_at is null" in provider, "Paid course retries must reject revoked enrollments"
+          assert "e.student_id=payment_row.user_id" in provider, "Paid course retries must bind the learner to the original payment"
+          assert "s.user_id=payment_row.user_id" in provider, "Paid subscription retries must bind the account to the original payment"
           assert "from public.product_purchases pp" in provider, "Paid product retries must require an existing purchase record"
           assert "pp.payment_id=payment_row.id" in provider, "Paid product retries must bind the purchase to the original payment"
           assert "pp.product_id::text=payment_row.metadata->>'product_id'" in provider, "Paid product retries must bind the purchased product"
