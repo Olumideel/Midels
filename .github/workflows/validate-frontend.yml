@@ -5,11 +5,12 @@ on:
     branches:
       - main
       - release/paystack-guarded-integrated-candidate
+      - fix/marketplace-refunded-purchase-state
   push:
     branches:
       - main
       - release/paystack-guarded-integrated-candidate
-      - fix/marketplace-refunded-purchase-state
+      - fix/marketplace-refund-entitlement-gates
 
 permissions:
   contents: read
@@ -39,6 +40,15 @@ jobs:
           }
           if (!source.includes("filter(x=>x.payments?.status==='paid')")) {
             throw new Error('Marketplace ownership state must require a paid linked payment.');
+          }
+          if (!source.includes("refunded_at,products(title,product_type),payments(status)').eq('buyer_id',STATE.currentUser.id).is('refunded_at',null)")) {
+            throw new Error('Buyer purchase library must exclude refunded purchase records.');
+          }
+          if (!source.includes("select('id,refunded_at,payments(status)').eq('product_id',productId).eq('buyer_id',STATE.currentUser.id).is('refunded_at',null).order('created_at',{ascending:false}).limit(1)")) {
+            throw new Error('Marketplace download authorization must exclude refunded purchase records.');
+          }
+          if (!source.includes("purchase?.refunded_at!==null")) {
+            throw new Error('Marketplace download authorization must explicitly reject refunded purchase records.');
           }
           for (const required of [
             "async function openCourseDetailsEditor(courseId)",
