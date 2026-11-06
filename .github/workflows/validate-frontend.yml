@@ -44,7 +44,7 @@ jobs:
           if (!source.includes("refunded_at,products(title,product_type),payments(status)').eq('buyer_id',STATE.currentUser.id).is('refunded_at',null)")) {
             throw new Error('Buyer purchase library must exclude refunded purchase records.');
           }
-          if (!source.includes("select('id,refunded_at,payments(status)').eq('product_id',productId).eq('buyer_id',STATE.currentUser.id).is('refunded_at',null)")) {
+          if (!source.includes("select('id,refunded_at,payments(status)').eq('product_id',productId).eq('buyer_id',STATE.currentUser.id).is('refunded_at',null).order('created_at',{ascending:false}).limit(1)")) {
             throw new Error('Marketplace download authorization must exclude refunded purchase records.');
           }
           if (!source.includes("purchase?.refunded_at!==null")) {
