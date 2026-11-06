@@ -30,13 +30,15 @@ Webhook endpoint:
 
 Set this endpoint in the **Paystack test-mode webhook configuration**, not the live-mode configuration. Confirm the signing secret belongs to that same test-mode webhook configuration.
 
-## Auth hardening prerequisite
+## Auth leaked-password protection — known plan limitation
 
-In Supabase Dashboard, enable leaked-password protection under Authentication / Sign In / Password settings (the exact dashboard label may vary):
+Supabase's built-in leaked-password protection requires the Pro plan. The current project is on the Free plan, so this control cannot presently be enabled in the dashboard. Do not mark it as enabled or treat the dashboard setting as completed.
+
+Dashboard location for eligible plans:
 
 https://supabase.com/dashboard/project/sdbgrnixnnybaqhunlmh/auth/providers
 
-This is a dashboard-only prerequisite and is not changed by the code in this PR. Verify the setting is enabled before the launch review.
+This control is separate from Paystack mode and does not itself prevent sandbox payment testing. Keep it recorded as an unresolved authentication-hardening limitation for the production security review. Do not upgrade the project or change billing without the owner's explicit decision. Any production release decision must explicitly acknowledge this limitation and document the compensating password controls in place.
 
 ## Acceptance test matrix
 
@@ -70,7 +72,7 @@ Before requesting approval to integrate or deploy, attach a redacted test report
 3. Sandbox references and event IDs for successful checkout, verification, webhook, duplicate delivery, partial refund, and full refund cases.
 4. Negative-test outcomes for wrong user, wrong environment, invalid signature, stale signature, conflicting duplicate, and over-refund.
 5. Before/after database evidence showing exactly one entitlement after payment, retained access after partial refund, and revoked access after full refund.
-6. Confirmation that leaked-password protection is enabled.
+6. Record the leaked-password-protection state accurately: unavailable on the current Free plan; document compensating controls and explicit risk acceptance if a production release is later considered.
 7. Confirmation that no live credentials were configured and no live transactions occurred.
 
 Do not merge, apply migrations, or deploy until the owner has reviewed the evidence and explicitly approved the next operation. Keep live charges disabled.
