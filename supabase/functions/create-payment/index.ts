@@ -136,10 +136,9 @@ serve(async req => {
     const reference = 'GCH-' + crypto.randomUUID()
     const mode = Deno.env.get('PAYSTACK_MODE') || 'test'
     const secret = Deno.env.get('PAYSTACK_SECRET_KEY') || ''
-    const expectedPrefix = mode === 'live' ? 'sk_live_' : 'sk_test_'
-    if (!['test', 'live'].includes(mode) || !secret.startsWith(expectedPrefix)) {
-      console.error('Paystack checkout configuration is missing or mismatched.')
-      return json({ error: 'Payment service is not configured for the selected environment.' }, 503)
+    if (mode !== 'test' || !secret.startsWith('sk_test_')) {
+      console.error('Paystack checkout is locked to test mode; live charges are disabled.')
+      return json({ error: 'Checkout is restricted to Paystack test mode. Live charges are disabled.' }, 503)
     }
 
     const { error: insertError } = await admin.from('payments').insert({

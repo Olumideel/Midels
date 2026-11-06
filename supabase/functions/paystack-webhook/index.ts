@@ -13,10 +13,9 @@ serve(async req => {
     const secret = Deno.env.get('PAYSTACK_SECRET_KEY') || ''
     const webhookSecret = Deno.env.get('PAYSTACK_WEBHOOK_SECRET') || ''
     const previousWebhookSecret = Deno.env.get('PAYSTACK_WEBHOOK_SECRET_PREVIOUS') || ''
-    const expectedPrefix = mode === 'live' ? 'sk_live_' : 'sk_test_'
-    if (!['test', 'live'].includes(mode) || !secret.startsWith(expectedPrefix)) {
-      console.error('Paystack webhook configuration is missing or mismatched.')
-      return new Response('Webhook environment is not configured', { status: 503 })
+    if (mode !== 'test' || !secret.startsWith('sk_test_')) {
+      console.error('Paystack webhook is locked to test mode; live events are disabled.')
+      return new Response('Test-mode webhook only; live events are disabled', { status: 503 })
     }
 
     const modernSignature = req.headers.get('paystack-signature') || ''
@@ -40,7 +39,7 @@ serve(async req => {
     }
     if (!signatureValid) return new Response('Invalid signature', { status: 401 })
 
-    const expectedDomain = mode
+    const expectedDomain = 'test'
     const event = JSON.parse(body)
     const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 

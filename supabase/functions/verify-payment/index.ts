@@ -34,10 +34,9 @@ serve(async req => {
     }
     const mode = Deno.env.get('PAYSTACK_MODE') || 'test'
     const secret = Deno.env.get('PAYSTACK_SECRET_KEY') || ''
-    const expectedPrefix = mode === 'live' ? 'sk_live_' : 'sk_test_'
-    if (!['test', 'live'].includes(mode) || !secret.startsWith(expectedPrefix)) {
-      console.error('Paystack verification configuration is missing or mismatched.')
-      return json({ error: 'Payment verification is not configured for the selected environment.' }, 503)
+    if (mode !== 'test' || !secret.startsWith('sk_test_')) {
+      console.error('Paystack verification is locked to test mode; live payments are disabled.')
+      return json({ error: 'Verification is restricted to Paystack test mode. Live payments are disabled.' }, 503)
     }
 
     const { data: payment, error: lookupError } = await admin.from('payments')
@@ -55,7 +54,7 @@ serve(async req => {
       return json({ status: 'pending', verified: false, purpose: payment.purpose })
     }
     const charge = result.data
-    const expectedDomain = mode
+    const expectedDomain = 'test'
     if (charge.domain !== expectedDomain) {
       console.error('Paystack verification returned a transaction from the wrong environment; no entitlement was granted.')
       return json({ error: 'The payment environment did not match this application configuration.' }, 409)
