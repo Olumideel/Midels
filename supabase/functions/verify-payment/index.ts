@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { resolvePaystackConfig } from '../_shared/paystack/config.ts'
+import { paystackMetadataMatches } from '../_shared/paystack/metadata.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': 'https://olumideel.github.io',
@@ -66,16 +67,9 @@ serve(async req => {
     }
     if (charge.status !== 'success') return json({ status: charge.status || 'pending', verified: false, purpose: payment.purpose })
 
-    let metadataMatches = charge.metadata?.user_id === user.id
-    if (payment.purpose === 'product_purchase') {
-      metadataMatches = metadataMatches &&
-        charge.metadata?.product_id === payment.metadata?.product_id &&
-        charge.metadata?.seller_id === payment.metadata?.seller_id
-    } else if (payment.purpose === 'course_enrollment') {
-      metadataMatches = metadataMatches &&
-        charge.metadata?.course_id === payment.metadata?.course_id &&
-        charge.metadata?.instructor_id === payment.metadata?.instructor_id
-    }
+    const metadataMatches = paystackMetadataMatches(
+      payment.purpose, payment.metadata, charge.metadata, user.id
+    )
     if (charge.reference !== reference ||
         Number(charge.amount) !== Number(payment.amount_minor) ||
         String(charge.currency || '').toUpperCase() !== String(payment.currency || '').trim().toUpperCase() ||
