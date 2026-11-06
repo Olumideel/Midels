@@ -44,7 +44,7 @@ export async function verifyModernPaystackSignature(
     const bytes = hexToBytes(digest)
     if (!bytes) continue
     for (const secret of secrets) {
-      if (await crypto.subtle.verify('HMAC', await hmacKey(secret), bytes, payload)) return true
+      if (await crypto.subtle.verify('HMAC', await hmacKey(secret), bytes, payload.buffer as ArrayBuffer)) return true
     }
   }
   return false
@@ -57,5 +57,5 @@ export async function verifyLegacyPaystackSignature(
 ): Promise<boolean> {
   const bytes = hexToBytes(signature)
   if (!bytes || !secretKey.startsWith('sk_test_')) return false
-  return crypto.subtle.verify('HMAC', await hmacKey(secretKey), bytes, asBytes(body))
+  return crypto.subtle.verify('HMAC', await hmacKey(secretKey), bytes, asBytes(body).slice().buffer as ArrayBuffer)
 }
