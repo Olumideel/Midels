@@ -63,6 +63,7 @@ Deno.test('supports overlapping webhook signing secrets during rotation', async 
   const currentDigest = await sign(currentSecret, now + '.' + body)
   const header = `t=${now},v1=whk_previous:${previousDigest},v1=whk_current:${currentDigest}`
   const valid = await verifyModernPaystackSignature(body, header, [currentSecret, previousSecret], now)
-  const rejected = await verifyModernPaystackSignature(body, header, currentSecret, now)
-  if (!valid || rejected) throw new Error('Rotation overlap must accept the previous secret only when it is configured')
+  const previousOnlyHeader = `t=${now},v1=whk_previous:${previousDigest}`
+  const previousRejectedWithoutOverlap = await verifyModernPaystackSignature(body, previousOnlyHeader, currentSecret, now)
+  if (!valid || previousRejectedWithoutOverlap) throw new Error('Rotation overlap must accept the previous secret only when it is configured')
 })
