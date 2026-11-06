@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { isPaystackTestModeConfigured } from '../_shared/paystack/config.ts'
 import { verifyLegacyPaystackSignature, verifyModernPaystackSignature } from './signature.ts'
 
 const json = (body: unknown, status = 200) =>
@@ -13,7 +14,7 @@ serve(async req => {
     const secret = Deno.env.get('PAYSTACK_SECRET_KEY') || ''
     const webhookSecret = Deno.env.get('PAYSTACK_WEBHOOK_SECRET') || ''
     const previousWebhookSecret = Deno.env.get('PAYSTACK_WEBHOOK_SECRET_PREVIOUS') || ''
-    if (mode !== 'test' || !secret.startsWith('sk_test_')) {
+    if (!isPaystackTestModeConfigured(mode, secret)) {
       console.error('Paystack webhook is locked to test mode; live events are disabled.')
       return new Response('Test-mode webhook only; live events are disabled', { status: 503 })
     }
