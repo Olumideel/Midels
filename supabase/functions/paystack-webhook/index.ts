@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { verifyLegacyPaystackSignature, verifyModernPaystackSignature } from './signature.ts'
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
@@ -24,35 +25,16 @@ serve(async req => {
         console.error('Paystack webhook signing secret is not configured.')
         return new Response('Webhook signing secret is not configured', { status: 503 })
       }
-      const fields = modernSignature.split(',').map(part => part.trim())
-      const timestampField = fields.find(part => part.startsWith('t='))
+      signatureValid = await verifyModernPaystackSignature(body, modernSignature, webhookSecret)
+      const timestampField = modernSignature.split(',').map(part => part.trim()).find(part => part.startsWith('t='))
       const timestamp = timestampField ? Number(timestampField.slice(2)) : NaN
       if (!Number.isSafeInteger(timestamp) || Math.abs(Math.floor(Date.now() / 1000) - timestamp) > 300) {
         return new Response('Expired or invalid webhook timestamp', { status: 401 })
       }
-      const signedValues = fields.filter(part => part.startsWith('v1=')).map(part => part.slice(3))
-      const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(webhookSecret),
-        { name: 'HMAC', hash: 'SHA-512' }, false, ['verify'])
-      const signedPayload = new TextEncoder().encode(timestamp + '.' + body)
-      for (const value of signedValues) {
-        const separator = value.indexOf(':')
-        const hex = separator >= 0 ? value.slice(separator + 1) : ''
-        if (!/^[a-f0-9]{128}$/i.test(hex)) continue
-        const bytes = new Uint8Array(hex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)))
-        if (await crypto.subtle.verify('HMAC', key, bytes, signedPayload)) {
-          signatureValid = true
-          break
-        }
-      }
     } else if (mode === 'test') {
       // Legacy test-mode compatibility only. Live mode requires Paystack's timestamped whsec_ signature.
       const legacySignature = req.headers.get('x-paystack-signature') || ''
-      if (/^[a-f0-9]{128}$/i.test(legacySignature)) {
-        const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret),
-          { name: 'HMAC', hash: 'SHA-512' }, false, ['verify'])
-        const bytes = new Uint8Array(legacySignature.match(/.{2}/g)!.map(byte => parseInt(byte, 16)))
-        signatureValid = await crypto.subtle.verify('HMAC', key, bytes, new TextEncoder().encode(body))
-      }
+      signatureValid = await verifyLegacyPaystackSignature(body, legacySignature, secret)
     }
     if (!signatureValid) return new Response('Invalid signature', { status: 401 })
 
