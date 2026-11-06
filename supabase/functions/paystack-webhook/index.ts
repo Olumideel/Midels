@@ -10,7 +10,11 @@ serve(async req => {
     const body = await req.text()
     const signature = req.headers.get('x-paystack-signature') || ''
     const secret = Deno.env.get('PAYSTACK_SECRET_KEY') || ''
-    if (!secret || !/^[a-f0-9]{128}$/i.test(signature)) return new Response('Invalid signature', { status: 401 })
+    if (!secret.startsWith('sk_test_')) {
+      console.error('Paystack webhook is disabled because the configured key is not a test secret.')
+      return new Response('Test-mode webhook only', { status: 503 })
+    }
+    if (!/^[a-f0-9]{128}$/i.test(signature)) return new Response('Invalid signature', { status: 401 })
     const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret),
       { name: 'HMAC', hash: 'SHA-512' }, false, ['verify'])
     const signatureBytes = new Uint8Array((signature.match(/.{2}/g) || []).map(byte => parseInt(byte, 16)))
@@ -22,7 +26,10 @@ serve(async req => {
 
     if (event.event === 'charge.success') {
       const charge = event.data
-      if (!charge?.reference || charge.status !== 'success') return json({ received: true, processed: false })
+      if (!charge?.reference || charge.status !== 'success' || charge.domain !== 'test') {
+        console.error('Ignoring a non-test or invalid Paystack charge-success event.')
+        return json({ received: true, processed: false })
+      }
       const { data: payment, error: lookupError } = await admin.from('payments')
         .select('user_id,amount_minor,currency,status,purpose,metadata')
         .eq('reference', charge.reference).maybeSingle()
@@ -55,7 +62,7 @@ serve(async req => {
     }
 
     if (event.event === 'charge.failed') {
-      const reference = event.data?.reference
+      const reference = event.data?.domain === 'test' ? event.data?.reference : null
       if (reference) {
         const { error } = await admin.from('payments').update({ status: 'failed', updated_at: new Date().toISOString() })
           .eq('reference', reference).eq('status', 'pending')
