@@ -12,6 +12,7 @@ serve(async req => {
     const mode = Deno.env.get('PAYSTACK_MODE') || 'test'
     const secret = Deno.env.get('PAYSTACK_SECRET_KEY') || ''
     const webhookSecret = Deno.env.get('PAYSTACK_WEBHOOK_SECRET') || ''
+    const previousWebhookSecret = Deno.env.get('PAYSTACK_WEBHOOK_SECRET_PREVIOUS') || ''
     const expectedPrefix = mode === 'live' ? 'sk_live_' : 'sk_test_'
     if (!['test', 'live'].includes(mode) || !secret.startsWith(expectedPrefix)) {
       console.error('Paystack webhook configuration is missing or mismatched.')
@@ -21,11 +22,12 @@ serve(async req => {
     const modernSignature = req.headers.get('paystack-signature') || ''
     let signatureValid = false
     if (modernSignature) {
-      if (!webhookSecret.startsWith('whsec_')) {
+      const webhookSecrets = [webhookSecret, previousWebhookSecret].filter(value => value.startsWith('whsec_'))
+      if (!webhookSecrets.length) {
         console.error('Paystack webhook signing secret is not configured.')
         return new Response('Webhook signing secret is not configured', { status: 503 })
       }
-      signatureValid = await verifyModernPaystackSignature(body, modernSignature, webhookSecret)
+      signatureValid = await verifyModernPaystackSignature(body, modernSignature, webhookSecrets)
       const timestampField = modernSignature.split(',').map(part => part.trim()).find(part => part.startsWith('t='))
       const timestamp = timestampField ? Number(timestampField.slice(2)) : NaN
       if (!Number.isSafeInteger(timestamp) || Math.abs(Math.floor(Date.now() / 1000) - timestamp) > 300) {

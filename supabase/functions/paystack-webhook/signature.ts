@@ -15,23 +15,30 @@ async function hmacKey(secret: string): Promise<CryptoKey> {
 export async function verifyModernPaystackSignature(
   body: string,
   header: string,
-  signingSecret: string,
+  signingSecrets: string | readonly string[],
   nowSeconds = Math.floor(Date.now() / 1000),
 ): Promise<boolean> {
-  if (!signingSecret.startsWith('whsec_')) return false
+  const secrets = [...new Set((typeof signingSecrets === 'string' ? [signingSecrets] : signingSecrets)
+    .filter(secret => typeof secret === 'string' && secret.startsWith('whsec_')))]
+  if (!secrets.length) return false
   const fields = header.split(',').map(part => part.trim())
   const timestampField = fields.find(part => part.startsWith('t='))
   const timestamp = timestampField ? Number(timestampField.slice(2)) : NaN
   if (!Number.isSafeInteger(timestamp) || Math.abs(nowSeconds - timestamp) > 300) return false
 
   const signedPayload = encoder.encode(timestamp + '.' + body)
-  const key = await hmacKey(signingSecret)
   const signatures = fields.filter(part => part.startsWith('v1=')).map(part => part.slice(3))
   for (const value of signatures) {
     const separator = value.indexOf(':')
+    const keyId = separator >= 0 ? value.slice(0, separator) : ''
     const hex = separator >= 0 ? value.slice(separator + 1) : ''
+    if (!/^whk_[A-Za-z0-9_-]+$/.test(keyId)) continue
     const bytes = hexToBytes(hex)
-    if (bytes && await crypto.subtle.verify('HMAC', key, bytes, signedPayload)) return true
+    if (!bytes) continue
+    for (const secret of secrets) {
+      const key = await hmacKey(secret)
+      if (await crypto.subtle.verify('HMAC', key, bytes, signedPayload)) return true
+    }
   }
   return false
 }

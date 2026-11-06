@@ -55,3 +55,14 @@ Deno.test('accepts a valid legacy test signature and rejects live-key use', asyn
   const liveKey = await verifyLegacyPaystackSignature(body, digest, 'sk_live_unit_test_secret')
   if (!valid || liveKey) throw new Error('Legacy verification must be test-key-only')
 })
+
+Deno.test('supports overlapping webhook signing secrets during rotation', async () => {
+  const previousSecret = 'whsec_previous_rotation_secret'
+  const currentSecret = 'whsec_current_rotation_secret'
+  const previousDigest = await sign(previousSecret, now + '.' + body)
+  const currentDigest = await sign(currentSecret, now + '.' + body)
+  const header = `t=${now},v1=whk_previous:${previousDigest},v1=whk_current:${currentDigest}`
+  const valid = await verifyModernPaystackSignature(body, header, [currentSecret, previousSecret], now)
+  const rejected = await verifyModernPaystackSignature(body, header, currentSecret, now)
+  if (!valid || rejected) throw new Error('Rotation overlap must accept the previous secret only when it is configured')
+})

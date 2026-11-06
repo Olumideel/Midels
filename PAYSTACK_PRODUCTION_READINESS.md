@@ -12,8 +12,9 @@ Keep the following server-side only:
 - `PAYSTACK_MODE=test` (default; retain until production approval)
 - `PAYSTACK_SECRET_KEY=sk_test_...` for test, or `sk_live_...` only during an explicitly approved production cutover
 - `PAYSTACK_WEBHOOK_SECRET=whsec_...` after creating the signing secret for the matching Paystack environment
+- `PAYSTACK_WEBHOOK_SECRET_PREVIOUS=whsec_...` (optional; temporary overlap only during Paystack signing-secret rotation)
 
-The function code fails closed if mode and secret prefix do not match. The webhook requires the timestamped `Paystack-Signature` header and matching `whsec_` secret in live mode. Test mode retains the legacy `x-paystack-signature` fallback for existing test integrations. When Paystack sends the modern signature header, the webhook verifies the raw body, all v1 signatures, and a ±300-second timestamp window.
+The function code fails closed if mode and secret prefix do not match. The webhook requires the timestamped `Paystack-Signature` header and matching `whsec_` secret in live mode. Test mode retains the legacy `x-paystack-signature` fallback for existing test integrations. When Paystack sends the modern signature header, the webhook verifies the raw body, all v1 signatures, and a ±300-second timestamp window. During signing-secret rotation, configure the previous `whsec_` value in `PAYSTACK_WEBHOOK_SECRET_PREVIOUS` before the dashboard overlap begins; both current and previous secrets are checked against every `whk_` candidate. Remove the previous secret after the overlap expires.
 
 ## Cutover checklist — do not perform until explicitly approved
 1. Complete a successful test-mode end-to-end checkout, authenticated verification, signed webhook delivery, duplicate-event/idempotency check, refund ledger test, and entitlement revocation test.
