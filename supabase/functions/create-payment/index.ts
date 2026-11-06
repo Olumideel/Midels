@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { isPaystackTestModeConfigured } from '../_shared/paystack/config.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': 'https://olumideel.github.io',
@@ -136,7 +137,7 @@ serve(async req => {
     const reference = 'GCH-' + crypto.randomUUID()
     const mode = Deno.env.get('PAYSTACK_MODE') || 'test'
     const secret = Deno.env.get('PAYSTACK_SECRET_KEY') || ''
-    if (mode !== 'test' || !secret.startsWith('sk_test_')) {
+    if (!isPaystackTestModeConfigured(mode, secret)) {
       console.error('Paystack checkout is locked to test mode; live charges are disabled.')
       return json({ error: 'Checkout is restricted to Paystack test mode. Live charges are disabled.' }, 503)
     }
