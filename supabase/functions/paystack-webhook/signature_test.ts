@@ -8,7 +8,7 @@ const now = 1800000000
 
 async function sign(keyText: string, value: string | Uint8Array) {
   const key = await crypto.subtle.importKey('raw', enc.encode(keyText), { name: 'HMAC', hash: 'SHA-512' }, false, ['sign'])
-  const digest = await crypto.subtle.sign('HMAC', key, typeof value === 'string' ? enc.encode(value) : value)
+  const digest = await crypto.subtle.sign('HMAC', key, typeof value === 'string' ? enc.encode(value) : value.slice().buffer as ArrayBuffer)
   return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('')
 }
 
