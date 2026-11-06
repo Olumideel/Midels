@@ -69,6 +69,9 @@ jobs:
           assert provider.count("payment_row.provider is distinct from 'paystack'") >= 3
           assert "from public, anon, authenticated" in provider
           assert provider.count("to service_role") >= 3
+          assert "and s.provider_reference=p_reference" in provider, "Paid subscription retries must verify the matching provider reference"
+          assert "and s.plan_code=payment_row.metadata->>'plan_code'" in provider, "Paid subscription retries must verify the purchased plan"
+          assert "s.status in ('active','trialing','past_due')" in provider, "Paid subscription retries must require an active entitlement state"
 
           checkout = Path("supabase/functions/create-payment/index.ts").read_text()
           assert "Number.isSafeInteger(coursePriceMinor)" in checkout, "Course checkout must reject unsafe or fractional minor-unit prices"
