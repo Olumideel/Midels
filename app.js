@@ -1704,11 +1704,33 @@ async function loadLearningDashboard(){
  }
  const dashboard=document.getElementById('learning-student-dashboard'),instructor=document.getElementById('learning-instructor-courses');
  if(!STATE.currentUser){dashboard.textContent='Sign in to view your learning progress.';instructor.textContent='Sign in to manage courses.';return}
- const [enrolments,own]=await Promise.all([sb.from('enrollments').select('id,course_id,courses(title)').eq('student_id',STATE.currentUser.id).is('revoked_at',null),sb.from('courses').select('id,title,description,cover_url,price_minor,currency,is_published').eq('instructor_id',STATE.currentUser.id)]);
+ const [enrolments,own]=await Promise.all([sb.from('enrollments').select('id,course_id,courses(title,cover_url)').eq('student_id',STATE.currentUser.id).is('revoked_at',null),sb.from('courses').select('id,title,description,cover_url,price_minor,currency,is_published').eq('instructor_id',STATE.currentUser.id)]);
  if(enrolments.error)dashboard.textContent='Unable to load enrolments.';else if(!enrolments.data?.length)dashboard.innerHTML='<p class="learn-muted">You have not enrolled in a course yet.</p>';else{
-  const {data:progress}=await sb.from('lesson_progress').select('enrollment_id,lesson_id').eq('student_id',STATE.currentUser.id);
-  const {data:lessons}=await sb.from('course_lessons').select('id,course_id').eq('is_published',true);
-  dashboard.innerHTML=enrolments.data.map(e=>{const publishedLessonIds=new Set((lessons||[]).filter(l=>l.course_id===e.course_id).map(l=>l.id)),total=publishedLessonIds.size,done=new Set((progress||[]).filter(p=>p.enrollment_id===e.id&&publishedLessonIds.has(p.lesson_id)).map(p=>p.lesson_id)).size,pct=total?Math.min(100,Math.round(done/total*100)):0;return '<div class="learn-course"><h4>'+escHTML(e.courses?.title||'Course')+'</h4><p class="learn-meta">'+done+' / '+total+' lessons · '+pct+'%</p><div class="learn-progress"><span style="width:'+pct+'%"></span></div><button class="btn bo" onclick="viewLearningCourse(\''+escHTML(e.course_id)+'\')">Continue</button></div>'}).join('');
+  const [progressResult,lessonResult,assessmentResult]=await Promise.all([
+   sb.from('lesson_progress').select('enrollment_id,lesson_id').eq('student_id',STATE.currentUser.id),
+   sb.from('course_lessons').select('id,course_id').eq('is_published',true),
+   sb.from('course_assessments').select('id,course_id').eq('is_published',true)
+  ]);
+  const assessmentIds=(assessmentResult.data||[]).map(a=>a.id);
+  const attemptResult=assessmentIds.length?await sb.from('assessment_attempts').select('assessment_id,passed,submitted_at').eq('student_id',STATE.currentUser.id).in('assessment_id',assessmentIds).order('submitted_at',{ascending:false}):{data:[],error:null};
+  if(progressResult.error||lessonResult.error||assessmentResult.error||attemptResult.error){
+   dashboard.innerHTML='<p class="learn-muted">Your learning overview is temporarily incomplete. Open a course to view its latest progress.</p>'+enrolments.data.map(e=>'<div class="learn-course"><h4>'+escHTML(e.courses?.title||'Course')+'</h4><button class="btn bo" onclick="viewLearningCourse(\''+escHTML(e.course_id)+'\')">Open course</button></div>').join('');
+  }else{
+   const progress=progressResult.data||[],lessons=lessonResult.data||[],publishedAssessments=assessmentResult.data||[],attempts=attemptResult.data||[];
+   dashboard.innerHTML=enrolments.data.map(e=>{
+    const lessonIds=new Set(lessons.filter(l=>l.course_id===e.course_id).map(l=>l.id));
+    const total=lessonIds.size,done=new Set(progress.filter(p=>p.enrollment_id===e.id&&lessonIds.has(p.lesson_id)).map(p=>p.lesson_id)).size;
+    const pct=total?Math.min(100,Math.round(done/total*100)):0;
+    const courseAssessmentIds=new Set(publishedAssessments.filter(a=>a.course_id===e.course_id).map(a=>a.id));
+    const courseAttempts=attempts.filter(a=>courseAssessmentIds.has(a.assessment_id));
+    const passed=new Set(courseAttempts.filter(a=>a.passed).map(a=>a.assessment_id)).size;
+    const assessmentTotal=courseAssessmentIds.size;
+    const lessonsDone=total>0&&done===total,assessmentsDone=passed===assessmentTotal;
+    const next=total===0?'Your instructor is preparing the lessons.':!lessonsDone?'Next milestone: complete your remaining lessons.':assessmentTotal&&!assessmentsDone?'Next milestone: pass the remaining assessments.':lessonsDone&&assessmentsDone?'You have met the published learning milestones.':'Continue exploring the course.';
+    const status=lessonsDone&&assessmentsDone&&total>0?'Milestones complete':pct===100?'Assessments in progress':'In progress';
+    return '<article class="learn-course academy-student-course-card">'+academyCoverMarkup(e.courses?.cover_url,e.courses?.title||'Course cover')+'<div class="academy-learning-item-head"><h4>'+escHTML(e.courses?.title||'Course')+'</h4><span class="academy-status '+(lessonsDone&&assessmentsDone&&total>0?'is-done':'')+'">'+status+'</span></div><p class="learn-meta">'+done+' of '+total+' lessons completed · '+pct+'%</p><div class="learn-progress" role="progressbar" aria-label="Lesson progress for '+escHTML(e.courses?.title||'course')+'" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'"><span style="width:'+pct+'%"></span></div><p class="learn-meta">'+passed+' of '+assessmentTotal+' assessments passed</p><p class="learn-muted">'+next+'</p><div class="learn-actions"><button class="btn bp" onclick="viewLearningCourse(\''+escHTML(e.course_id)+'\')">'+(lessonsDone&&assessmentsDone&&total>0?'Review course':'Continue learning')+'</button></div></article>';
+   }).join('');
+  }
  }
  instructor.innerHTML=(own.data||[]).map(c=>'<div class="learn-lesson academy-instructor-course"><div class="academy-instructor-course-info">'+academyCoverMarkup(c.cover_url,c.title+' cover')+'<div><strong>'+escHTML(c.title)+'</strong><p class="learn-muted">'+(c.is_published?'Published':'Draft')+' · '+formatCoursePrice(c.price_minor,c.currency)+'</p></div></div><div class="learn-actions">'+(c.is_published?'':'<button class="btn bo" onclick="openCourseDetailsEditor(\''+escHTML(c.id)+'\')">Edit details</button>')+'<button class="btn bo" onclick="viewLearningCourse(\''+escHTML(c.id)+'\')">Manage</button><button class="btn bo" onclick="addLearningLesson(\''+escHTML(c.id)+'\')">Add lesson</button><button class="btn bo" onclick="createCourseAssessment(\''+escHTML(c.id)+'\')">Create assessment</button>'+(c.is_published?'':'<button class="btn bp" onclick="publishLearningCourse(\''+escHTML(c.id)+'\')">Publish</button>')+'</div></div>').join('')||'<p class="learn-muted">No courses created yet.</p>';
 }
