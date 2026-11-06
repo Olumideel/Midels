@@ -41,8 +41,8 @@ serve(async req => {
         return json({ received: true, processed: false })
       }
       const { data: payment, error: lookupError } = await admin.from('payments')
-        .select('user_id,amount_minor,currency,status,purpose,metadata')
-        .eq('reference', charge.reference).maybeSingle()
+        .select('provider,user_id,amount_minor,currency,status,purpose,metadata')
+        .eq('reference', charge.reference).eq('provider', 'paystack').maybeSingle()
       if (lookupError) throw lookupError
       if (!payment) return json({ received: true, processed: false })
       if ((payment.metadata?.paystack_mode && payment.metadata.paystack_mode !== paystack.mode) ||
@@ -50,7 +50,7 @@ serve(async req => {
         console.error('Webhook payment environment does not match the original checkout environment.')
         return json({ received: true, processed: false })
       }
-      let metadataMatches = charge.metadata?.user_id === payment.user_id
+      let metadataMatches = payment.provider === 'paystack' && charge.metadata?.user_id === payment.user_id
       if (payment.purpose === 'product_purchase') {
         metadataMatches = metadataMatches &&
           charge.metadata?.product_id === payment.metadata?.product_id &&
