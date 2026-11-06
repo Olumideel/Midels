@@ -131,7 +131,19 @@ begin
     return false;
   end if;
 
-  if payment_row.status='paid' then return true; end if;
+  if payment_row.status='paid' then
+    -- A settled payment is not proof that its subscription entitlement still exists.
+    -- Keep verification idempotent without reporting success for a missing or mismatched subscription.
+    return exists(
+      select 1
+      from public.subscriptions s
+      where s.user_id=payment_row.user_id
+        and s.provider='paystack'
+        and s.provider_reference=p_reference
+        and s.plan_code=payment_row.metadata->>'plan_code'
+        and s.status in ('active','trialing','past_due')
+    );
+  end if;
   if payment_row.status<>'pending' then return false; end if;
 
   plan_code:=payment_row.metadata->>'plan_code';
