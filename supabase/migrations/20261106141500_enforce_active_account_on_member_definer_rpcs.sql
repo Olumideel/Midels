@@ -263,3 +263,46 @@ GRANT EXECUTE ON FUNCTION public.mark_notification_read(uuid) TO authenticated, 
 GRANT EXECUTE ON FUNCTION public.publish_course_assessment(uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.submit_course_assessment(uuid, jsonb) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.update_my_profile(text,text,text,text,text,text,character,text,text,text) TO authenticated, service_role;
+
+
+DO $migration_assertions$
+DECLARE
+  signature text;
+  function_oid regprocedure;
+  function_config text[];
+  function_definition text;
+  signatures text[] := ARRAY[
+    'public.get_assessment_for_student(uuid)',
+    'public.mark_all_notifications_read()',
+    'public.mark_notification_read(uuid)',
+    'public.publish_course_assessment(uuid)',
+    'public.submit_course_assessment(uuid,jsonb)',
+    'public.update_my_profile(text,text,text,text,text,text,character,text,text,text)'
+  ];
+BEGIN
+  FOREACH signature IN ARRAY signatures LOOP
+    function_oid := to_regprocedure(signature);
+    IF function_oid IS NULL THEN
+      RAISE EXCEPTION 'Expected member RPC missing: %', signature;
+    END IF;
+
+    SELECT proconfig, pg_get_functiondef(function_oid::oid)
+      INTO function_config, function_definition
+    FROM pg_proc
+    WHERE oid = function_oid::oid;
+
+    IF NOT coalesce(function_config @> ARRAY['search_path=""'], false) THEN
+      RAISE EXCEPTION 'Unsafe or missing empty search_path on %', signature;
+    END IF;
+    IF position('private.is_active_user()' IN function_definition) = 0 THEN
+      RAISE EXCEPTION 'Active-account guard missing from %', signature;
+    END IF;
+    IF has_function_privilege('anon', function_oid, 'EXECUTE') THEN
+      RAISE EXCEPTION 'Anonymous EXECUTE unexpectedly granted on %', signature;
+    END IF;
+    IF NOT has_function_privilege('authenticated', function_oid, 'EXECUTE') THEN
+      RAISE EXCEPTION 'Authenticated EXECUTE unexpectedly missing on %', signature;
+    END IF;
+  END LOOP;
+END;
+$migration_assertions$;
