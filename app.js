@@ -419,9 +419,9 @@ async function loadAdminPrivacyRequests() {
   list.innerHTML = data.map(item => {
     const label = item.request_type === 'data_deletion' ? 'Account deletion request' : 'Personal data access/export request';
     const actions = item.status === 'open'
-      ? '<button class="btn bo" type="button" onclick="updateAdminPrivacyRequest(\'' + escHTML(item.id) + '\',\'reviewing\')">Mark reviewing</button>' : '';
+      ? '<button class="btn bo" type="button" data-admin-privacy-action="1" data-request-id="' + escHTML(item.id) + '" data-request-status="reviewing">Mark reviewing</button>' : '';
     const finalActions = ['fulfilled','rejected'].includes(item.status) ? ''
-      : '<button class="btn bp" type="button" onclick="updateAdminPrivacyRequest(\'' + escHTML(item.id) + '\',\'fulfilled\')">Mark fulfilled</button><button class="btn ghost" type="button" onclick="updateAdminPrivacyRequest(\'' + escHTML(item.id) + '\',\'rejected\')">Reject</button>';
+      : '<button class="btn bp" type="button" data-admin-privacy-action="1" data-request-id="' + escHTML(item.id) + '" data-request-status="fulfilled">Mark fulfilled</button><button class="btn ghost" type="button" data-admin-privacy-action="1" data-request-id="' + escHTML(item.id) + '" data-request-status="rejected">Reject</button>';
     return '<article style="padding:16px 0;border-bottom:1px solid var(--border);">' +
       '<strong>' + label + '</strong><p style="font-size:13px;color:var(--muted);margin:6px 0;">' +
       escHTML(item.display_name || 'Member') + ' · ' + escHTML(item.email || '') + ' · ' +
@@ -429,6 +429,9 @@ async function loadAdminPrivacyRequests() {
       (item.details ? '<p style="margin:8px 0;">' + escHTML(item.details) + '</p>' : '') +
       '<div class="profile-actions" style="justify-content:flex-start;margin-top:10px;">' + actions + finalActions + '</div></article>';
   }).join('');
+  list.querySelectorAll('[data-admin-privacy-action]').forEach(button => {
+    button.addEventListener('click', () => updateAdminPrivacyRequest(button.dataset.requestId, button.dataset.requestStatus));
+  });
 }
 
 async function updateAdminPrivacyRequest(requestId, status) {
@@ -460,9 +463,9 @@ async function loadAdminReports() {
   if (!data?.length) { list.innerHTML = '<p style="color:var(--muted);padding:16px 0;">No reports in this queue.</p>'; return; }
   list.innerHTML = data.map(report => {
     const actions = report.status === 'open'
-      ? '<button class="btn bo" type="button" onclick="updateAdminReport(\'' + escHTML(report.id) + '\',\'reviewing\')">Mark reviewing</button>' : '';
+      ? '<button class="btn bo" type="button" data-admin-report-action="1" data-report-id="' + escHTML(report.id) + '" data-report-status="reviewing">Mark reviewing</button>' : '';
     const closeActions = ['resolved','dismissed'].includes(report.status) ? ''
-      : '<button class="btn bp" type="button" onclick="updateAdminReport(\'' + escHTML(report.id) + '\',\'resolved\')">Resolve</button><button class="btn ghost" type="button" onclick="updateAdminReport(\'' + escHTML(report.id) + '\',\'dismissed\')">Dismiss</button>';
+      : '<button class="btn bp" type="button" data-admin-report-action="1" data-report-id="' + escHTML(report.id) + '" data-report-status="resolved">Resolve</button><button class="btn ghost" type="button" data-admin-report-action="1" data-report-id="' + escHTML(report.id) + '" data-report-status="dismissed">Dismiss</button>';
     return '<article style="padding:18px 0;border-bottom:1px solid var(--border);">' +
       '<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;"><strong>' +
       escHTML(report.target_type) + ' report · ' + escHTML(report.reason) + '</strong><span class="chef-chip">' + escHTML(report.status) + '</span></div>' +
@@ -471,6 +474,9 @@ async function loadAdminReports() {
       '<p style="font-size:12px;color:var(--muted);word-break:break-all;">Target ID: ' + escHTML(report.target_id) + '</p>' +
       '<div class="profile-actions" style="justify-content:flex-start;margin-top:12px;">' + actions + closeActions + '</div></article>';
   }).join('');
+  list.querySelectorAll('[data-admin-report-action]').forEach(button => {
+    button.addEventListener('click', () => updateAdminReport(button.dataset.reportId, button.dataset.reportStatus));
+  });
 }
 
 async function loadMyPrivacyRequests() {
