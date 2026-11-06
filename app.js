@@ -1153,8 +1153,9 @@ function renderChatMessages(msgs) {
   body.innerHTML = msgs.map(m => {
     const isMe = m.sender_id === STATE.currentUser.id;
     const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const attachment = m.attachment_url
-      ? '<a class="chat-attachment" href="' + escHTML(m.attachment_url) + '" target="_blank" rel="noopener noreferrer">View attachment</a>'
+    const attachmentUrl = safeProfileLink(m.attachment_url);
+    const attachment = attachmentUrl
+      ? '<a class="chat-attachment" href="' + escHTML(attachmentUrl) + '" target="_blank" rel="noopener noreferrer">View attachment</a>'
       : '';
     return `<div class="chat-msg ${isMe ? 'me' : 'them'}">
       <div class="chat-bubble">${escHTML(m.body || '')}${attachment}</div>
