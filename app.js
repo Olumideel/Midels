@@ -1860,14 +1860,16 @@ async function viewLearningCourse(courseId){
  const lessonMarkup=lessons.length?lessons.map((l,i)=>{
   const isDone=completed.has(l.id);
   const detail=(l.content||l.description||'').trim();
-  const actions=enrol&&l.is_published?`<div class="learn-actions"><button class="btn ${isDone?'bo':'bp'}" ${isDone?'disabled':''} onclick="completeLearningLesson('${escHTML(enrol.id)}','${escHTML(l.id)}','${escHTML(courseId)}')">${isDone?'Lesson completed':'Mark lesson complete'}</button></div>`:(isInstructor&&!l.is_published?`<div class="learn-actions"><button class="btn bo" onclick="openLearningLessonEditor('${escHTML(l.id)}','${escHTML(courseId)}')">Edit lesson</button><button class="btn bp" onclick="publishLearningLesson('${escHTML(l.id)}','${escHTML(courseId)}')">Publish lesson</button></div>`:'');
+  const isCourseDraft=isInstructor&&!course.is_published;
+  const reorderControls=isCourseDraft&&!l.is_published?`<button class="btn bo" ${i===0||lessons[i-1].is_published?'disabled':''} onclick="moveDraftLesson('${escHTML(l.id)}','${escHTML(courseId)}',-1)" aria-label="Move lesson up">↑</button><button class="btn bo" ${i===lessons.length-1||lessons[i+1].is_published?'disabled':''} onclick="moveDraftLesson('${escHTML(l.id)}','${escHTML(courseId)}',1)" aria-label="Move lesson down">↓</button>`:'';
+  const actions=enrol&&l.is_published?`<div class="learn-actions"><button class="btn ${isDone?'bo':'bp'}" ${isDone?'disabled':''} onclick="completeLearningLesson('${escHTML(enrol.id)}','${escHTML(l.id)}','${escHTML(courseId)}')">${isDone?'Lesson completed':'Mark lesson complete'}</button></div>`:(isInstructor&&!l.is_published?`<div class="learn-actions">${reorderControls}<button class="btn bo" onclick="openLearningLessonEditor('${escHTML(l.id)}','${escHTML(courseId)}')">Edit lesson</button><button class="btn bp" onclick="publishLearningLesson('${escHTML(l.id)}','${escHTML(courseId)}')">Publish lesson</button></div>`:'');
   return `<article class="academy-learning-item"><div class="academy-learning-item-head"><span class="academy-step">${i+1}</span><div class="academy-learning-item-copy"><strong>${escHTML(l.title)}</strong><p class="learn-muted">${l.duration_minutes?Number(l.duration_minutes)+' min · ':''}${isDone?'Completed':l.is_published?'Lesson':'Draft lesson'}</p></div><span class="academy-status ${isDone?'is-done':''}">${isDone?'Complete':l.is_published?'Available':'Draft'}</span></div>${detail?`<div class="academy-learning-content">${escHTML(detail).replace(/\n/g,'<br>')}</div>`:''}${actions}</article>`;
  }).join(''):'<p class="learn-muted">No lessons have been added yet.</p>';
  const assessmentMarkup=assessments.length?assessments.map(a=>{
   const last=latestAttempts.get(a.id),attemptCount=attempts.filter(x=>x.assessment_id===a.id).length;
   const outcome=last?'<p class="learn-meta">Latest result: <strong>'+Number(last.score_percentage).toFixed(1)+'%</strong> · '+(last.passed?'Passed':'Not passed')+' · '+attemptCount+' attempt'+(attemptCount===1?'':'s')+'</p>':'<p class="learn-muted">Not attempted yet</p>';
   const questions=draftQuestions.filter(q=>q.assessment_id===a.id);
-  const questionList=isInstructor&&!a.is_published?'<div class="academy-question-editor-list"><strong>Draft questions ('+questions.length+')</strong>'+(questions.length?questions.map((q,i)=>'<article class="academy-learning-item"><strong>'+(i+1)+'. '+escHTML(q.prompt)+'</strong><p class="learn-muted">'+(q.options||[]).length+' options · Correct answer '+(Number(q.correct_option)+1)+'</p><div class="learn-actions"><button class="btn bo" onclick="openAssessmentQuestionEditor(\''+escHTML(a.id)+'\',\''+escHTML(courseId)+'\',\''+escHTML(q.id)+'\')">Edit question</button><button class="btn bo" onclick="deleteAssessmentQuestion(\''+escHTML(a.id)+'\',\''+escHTML(courseId)+'\',\''+escHTML(q.id)+'\')">Delete</button></div></article>').join(''):'<p class="learn-muted">No questions added yet.</p>')+'</div>':'';
+  const questionList=isInstructor&&!a.is_published?'<div class="academy-question-editor-list"><strong>Draft questions ('+questions.length+')</strong>'+(questions.length?questions.map((q,i)=>'<article class="academy-learning-item"><strong>'+(i+1)+'. '+escHTML(q.prompt)+'</strong><p class="learn-muted">'+(q.options||[]).length+' options · Correct answer '+(Number(q.correct_option)+1)+'</p><div class="learn-actions"><button class="btn bo" '+(i===0?'disabled':'')+' onclick="moveDraftQuestion(\''+escHTML(a.id)+'\',\''+escHTML(courseId)+'\',\''+escHTML(q.id)+'\',-1)" aria-label="Move question up">↑</button><button class="btn bo" '+(i===questions.length-1?'disabled':'')+' onclick="moveDraftQuestion(\''+escHTML(a.id)+'\',\''+escHTML(courseId)+'\',\''+escHTML(q.id)+'\',1)" aria-label="Move question down">↓</button><button class="btn bo" onclick="openAssessmentQuestionEditor(\''+escHTML(a.id)+'\',\''+escHTML(courseId)+'\',\''+escHTML(q.id)+'\')">Edit question</button><button class="btn bo" onclick="deleteAssessmentQuestion(\''+escHTML(a.id)+'\',\''+escHTML(courseId)+'\',\''+escHTML(q.id)+'\')">Delete</button></div></article>').join(''):'<p class="learn-muted">No questions added yet.</p>')+'</div>':'';
   return '<article class="academy-learning-item"><div class="academy-learning-item-head"><div class="academy-learning-item-copy"><strong>'+escHTML(a.title)+'</strong><p class="learn-muted">Pass mark: '+Number(a.pass_percentage)+'%</p></div><span class="academy-status '+(last?.passed?'is-done':'')+'">'+(last?.passed?'Passed':a.is_published?'Assessment':'Draft')+'</span></div>'+(a.description?'<p class="learn-muted">'+escHTML(a.description)+'</p>':'')+questionList+(enrol&&a.is_published?outcome+'<div class="learn-actions"><button class="btn bp" onclick="startCourseAssessment(\''+escHTML(a.id)+'\',\''+escHTML(courseId)+'\')">'+(last?'Retake assessment':'Start assessment')+'</button></div>':(isInstructor&&!a.is_published?'<div class="learn-actions"><button class="btn bo" onclick="addAssessmentQuestion(\''+escHTML(a.id)+'\',\''+escHTML(courseId)+'\')">Add question</button><button class="btn bp" onclick="publishCourseAssessment(\''+escHTML(a.id)+'\',\''+escHTML(courseId)+'\')">Publish assessment</button></div>':''))+'</article>';
  }).join(''):'<p class="learn-muted">No assessments have been added yet.</p>';
  const certMarkup=certificate?'<section class="academy-certificate-preview"><span class="lbl">Course completion</span><h4>Certificate issued</h4><p class="learn-muted">Issued '+new Date(certificate.issued_at).toLocaleDateString()+'</p><p>Certificate code: <strong>'+escHTML(certificate.certificate_code)+'</strong></p><div class="learn-actions"><button class="btn bo" onclick="GenUICopyCertificateCode(\''+escHTML(certificate.certificate_code)+'\')">Copy certificate code</button><a class="btn bo" href="#certificate-verification">Verify certificate</a></div></section>':(enrol?'<section class="academy-certificate-preview"><h4>Course certificate</h4><p class="learn-muted">'+(allLessonsDone&&allAssessmentsPassed?'You have met the visible course requirements. Request your certificate when ready.':'Complete all published lessons and pass each published assessment to become eligible.')+'</p><button class="btn bp" '+(allLessonsDone&&allAssessmentsPassed?'':'disabled')+' onclick="requestCourseCertificate(\''+escHTML(enrol.id)+'\')">Request certificate</button></section>':'');
@@ -1929,9 +1931,59 @@ async function deleteAssessmentQuestion(assessmentId,courseId,questionId){
  if(error||!deleted){toast(error?'Question could not be deleted: '+error.message:'Question not found or no longer editable.','error');return}
  toast('Draft question deleted.','success');await viewLearningCourse(courseId);
 }
+async function moveDraftLesson(lessonId,courseId,direction){
+ if(!STATE.currentUser||![-1,1].includes(Number(direction)))return;
+ const {data:course,error:courseError}=await sb.from('courses').select('id').eq('id',courseId).eq('instructor_id',STATE.currentUser.id).eq('is_published',false).maybeSingle();
+ if(courseError||!course){toast('Only lessons in your own unpublished course can be reordered.','error');return}
+ const {data:rows,error}=await sb.from('course_lessons').select('id,position,is_published').eq('course_id',courseId).order('position').order('created_at');
+ if(error){toast('Lesson order could not be loaded.','error');return}
+ const index=rows.findIndex(row=>row.id===lessonId),other=rows[index+Number(direction)];
+ if(index<0||!other||other.is_published||rows[index].is_published){toast('Draft lessons can only move past another draft lesson.','error');return}
+ await swapAcademyPositions('course_lessons','id','course_id',courseId,rows[index],other,rows);
+ await viewLearningCourse(courseId);
+}
+async function moveDraftQuestion(assessmentId,courseId,questionId,direction){
+ if(!STATE.currentUser||![-1,1].includes(Number(direction)))return;
+ const {data:course,error:courseError}=await sb.from('courses').select('id').eq('id',courseId).eq('instructor_id',STATE.currentUser.id).maybeSingle();
+ if(courseError||!course){toast('Only the course instructor can reorder questions.','error');return}
+ const {data:assessment,error:assessmentError}=await sb.from('course_assessments').select('id').eq('id',assessmentId).eq('course_id',courseId).eq('is_published',false).maybeSingle();
+ if(assessmentError||!assessment){toast('Published assessments cannot be reordered.','error');return}
+ const {data:rows,error}=await sb.from('assessment_questions').select('id,position').eq('assessment_id',assessmentId).order('position').order('created_at');
+ if(error){toast('Question order could not be loaded.','error');return}
+ const index=rows.findIndex(row=>row.id===questionId),other=rows[index+Number(direction)];
+ if(index<0||!other){toast('There is no question in that direction.','error');return}
+ await swapAcademyPositions('assessment_questions','id','assessment_id',assessmentId,rows[index],other,rows);
+ await viewLearningCourse(courseId);
+}
+async function swapAcademyPositions(table,idField,parentField,parentId,current,other,rows){
+ const temporary=Math.max(0,...rows.map(row=>Number(row.position)||0))+1;
+ const first=await sb.from(table).update({position:temporary}).eq(idField,current.id).eq(parentField,parentId).select(idField).maybeSingle();
+ if(first.error||!first.data){toast('Could not start reordering. Please refresh and try again.','error');return false}
+ const second=await sb.from(table).update({position:current.position}).eq(idField,other.id).eq(parentField,parentId).select(idField).maybeSingle();
+ if(second.error||!second.data){
+  await sb.from(table).update({position:current.position}).eq(idField,current.id).eq(parentField,parentId);
+  toast('Reordering was not completed. Please refresh and try again.','error');return false;
+ }
+ const third=await sb.from(table).update({position:other.position}).eq(idField,current.id).eq(parentField,parentId).select(idField).maybeSingle();
+ if(third.error||!third.data){
+  await sb.from(table).update({position:other.position}).eq(idField,other.id).eq(parentField,parentId);
+  await sb.from(table).update({position:current.position}).eq(idField,current.id).eq(parentField,parentId);
+  toast('Reordering could not be completed. Please refresh and try again.','error');return false;
+ }
+ toast('Order updated.','success');return true;
+}
 async function publishCourseAssessment(assessmentId,courseId){
- const {data:questions,error:readError}=await sb.from('assessment_questions').select('id').eq('assessment_id',assessmentId);
- if(readError||!questions?.length){toast('Add at least one question before publishing.','error');return}
+ if(!STATE.currentUser){openAuth('login');return}
+ const {data:course,error:courseError}=await sb.from('courses').select('id').eq('id',courseId).eq('instructor_id',STATE.currentUser.id).maybeSingle();
+ if(courseError||!course){toast('Only the course instructor can publish this assessment.','error');return}
+ const {data:assessment,error:assessmentError}=await sb.from('course_assessments').select('id,title,pass_percentage,is_published').eq('id',assessmentId).eq('course_id',courseId).eq('is_published',false).maybeSingle();
+ if(assessmentError||!assessment){toast('This assessment is no longer an editable draft.','error');return}
+ const {data:questions,error:readError}=await sb.from('assessment_questions').select('id,prompt,options,correct_option,position').eq('assessment_id',assessmentId).order('position');
+ if(readError){toast('Assessment readiness could not be checked. Please try again.','error');return}
+ if(!questions?.length){toast('Add at least one question before publishing.','error');return}
+ const invalid=questions.findIndex(q=>!String(q.prompt||'').trim()||!Array.isArray(q.options)||q.options.length<2||q.options.length>6||q.options.some((option,i)=>!String(option||'').trim()||q.options.indexOf(option)!==i)||!Number.isInteger(Number(q.correct_option))||Number(q.correct_option)<0||Number(q.correct_option)>=q.options.length);
+ if(invalid>=0){toast('Question '+(invalid+1)+' needs a prompt, 2–6 distinct answer options and a valid correct answer.','error');return}
+ if(!String(assessment.title||'').trim()||!Number.isInteger(Number(assessment.pass_percentage))||Number(assessment.pass_percentage)<1||Number(assessment.pass_percentage)>100){toast('Review the assessment title and pass mark before publishing.','error');return}
  const {error}=await sb.rpc('publish_course_assessment',{p_assessment_id:assessmentId});
  if(error){toast('Could not publish assessment: '+error.message,'error');return}
  toast('Assessment published and locked against further edits.','success');await viewLearningCourse(courseId);
