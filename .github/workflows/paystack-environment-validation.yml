@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths:
       - "supabase/functions/**"
+      - "supabase/migrations/20261106141500_enforce_active_account_on_member_definer_rpcs.sql"
+      - "supabase/migrations/20261106141600_restrict_backend_only_table_grants.sql"
+      - "supabase/migrations/20261106141700_require_paystack_provider_for_confirmation.sql"
       - ".github/workflows/paystack-environment-validation.yml"
 permissions:
   contents: read
@@ -24,3 +27,45 @@ jobs:
         run: |
           deno test supabase/functions/_shared/paystack/config_test.ts
           deno test supabase/functions/paystack-webhook/signature_test.ts
+
+      - name: Validate database security migration invariants
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          root = Path("supabase/migrations")
+          member = (root / "20261106141500_enforce_active_account_on_member_definer_rpcs.sql").read_text().lower()
+          grants = (root / "20261106141600_restrict_backend_only_table_grants.sql").read_text().lower()
+          provider = (root / "20261106141700_require_paystack_provider_for_confirmation.sql").read_text().lower()
+
+          member_functions = [
+              "get_assessment_for_student",
+              "mark_all_notifications_read",
+              "mark_notification_read",
+              "publish_course_assessment",
+              "submit_course_assessment",
+              "update_my_profile",
+          ]
+          for name in member_functions:
+              assert f"create or replace function public.{name}" in member, f"Missing member RPC: {name}"
+          assert member.count("private.is_active_user()") >= len(member_functions), "Missing active-account guard"
+          assert "set search_path to ''" in member, "Empty search_path missing"
+          assert "from public, anon" in member and "to authenticated, service_role" in member
+
+          assert "create or replace function private.is_blocked(a uuid, b uuid)" in member
+          assert "auth.uid() is distinct from a" in member, "Block lookup is not bound to caller as first party"
+          assert "auth.uid() is distinct from b" not in member, "Block lookup allows caller as arbitrary second party"
+          assert "revoke all on function private.is_blocked(uuid, uuid) from public, anon" in member
+          assert "grant execute on function private.is_blocked(uuid, uuid) to authenticated" in member
+
+          for table in ("public.audit_logs", "public.newsletter_subscribers"):
+              assert f"revoke all on table {table} from public, anon, authenticated" in grants
+              assert f"grant all on table {table} to service_role" in grants
+
+          for name in ("confirm_course_payment", "confirm_paystack_payment", "confirm_product_payment"):
+              assert f"create or replace function public.{name}" in provider
+          assert provider.count("payment_row.provider is distinct from 'paystack'") >= 3
+          assert "from public, anon, authenticated" in provider
+          assert provider.count("to service_role") >= 3
+          print("Database security migration assertions passed.")
+          PY
