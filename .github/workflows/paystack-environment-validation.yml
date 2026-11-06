@@ -70,6 +70,10 @@ jobs:
           assert "from public, anon, authenticated" in provider
           assert provider.count("to service_role") >= 3
 
+          checkout = Path("supabase/functions/create-payment/index.ts").read_text()
+          assert "Number.isSafeInteger(coursePriceMinor)" in checkout, "Course checkout must reject unsafe or fractional minor-unit prices"
+          assert "amountMinor = coursePriceMinor" in checkout, "Course checkout must use the validated minor-unit amount"
+
           assert "refund_reference text not null unique" in refunds, "Refund reference must be unique"
           assert "for update" in refunds, "Refund processing must lock the payment row"
           assert "on conflict (refund_reference) do nothing" in refunds, "Duplicate refund delivery must be idempotent"
