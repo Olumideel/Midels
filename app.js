@@ -1340,7 +1340,7 @@ async function renderFriendsPanel() {
         ${avatarMarkup(u, 'freq-av')}
         <div class="freq-info">
           <div class="freq-name">${escHTML(u.name||'Unknown')}</div>
-          <div class="freq-meta">${u.role||''} · ${u.location||''}</div>
+          <div class="freq-meta">${escHTML(u.role||'')} · ${escHTML(u.location||'')}</div>
           <div class="freq-btns">
             <button class="freq-btn accept" onclick="acceptFriendRequest('${r.id}','${r.sender_id}')">Accept</button>
             <button class="freq-btn decline" onclick="declineFriendRequest('${r.id}','${r.sender_id}')">Decline</button>
