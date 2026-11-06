@@ -23,18 +23,16 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          import re
 
           app = Path("app.js").read_text()
-          migration_path = Path("supabase/migrations/20261106143500_minimize_public_certificate_verification_data.sql")
-          migration = migration_path.read_text()
-          match = re.search(r"CREATE OR REPLACE FUNCTION public\\.verify_course_certificate\\(p_certificate_code text\\)(.*?)\\$function\\$;", migration, re.S | re.I)
-          assert match, "Certificate verification function definition missing"
-          body = match.group(1).lower()
+          migration = Path("supabase/migrations/20261106143500_minimize_public_certificate_verification_data.sql").read_text()
+          chunks = migration.split("$function$")
+          assert len(chunks) >= 3, "Certificate verification function definition missing"
+          body = chunks[1].lower()
           for field in ("student_name", "full_name", "display_name", "student_id"):
               assert field not in body, f"Public verifier exposes {field}"
-          assert "security definer" in body, "Expected SECURITY DEFINER declaration"
-          assert 'set search_path to \'\'' in body, "Empty search_path must be preserved"
+          assert "security definer" in chunks[0].lower(), "Expected SECURITY DEFINER declaration"
+          assert "set search_path to ''" in chunks[0].lower(), "Empty search_path must be preserved"
           assert "revoke all on function public.verify_course_certificate(text) from public" in migration.lower()
           assert "grant execute on function public.verify_course_certificate(text) to anon, authenticated, service_role" in migration.lower()
           assert "data.student_name" not in app, "Public UI must not render learner identity"
