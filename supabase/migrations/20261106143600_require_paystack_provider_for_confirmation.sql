@@ -231,6 +231,10 @@ begin
     return exists(
       select 1 from public.product_purchases pp
       where pp.payment_id=payment_row.id
+        and pp.product_id::text=payment_row.metadata->>'product_id'
+        and pp.seller_id::text=payment_row.metadata->>'seller_id'
+        and pp.buyer_id=payment_row.user_id
+        and pp.refunded_at is null
     );
   end if;
   if payment_row.status<>'pending' then return false; end if;

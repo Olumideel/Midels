@@ -12,6 +12,11 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } })
 
+const confirmationRpc = (purpose: string) =>
+  purpose === 'product_purchase' ? 'confirm_product_payment'
+    : purpose === 'course_enrollment' ? 'confirm_course_payment'
+    : 'confirm_paystack_payment'
+
 serve(async req => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
@@ -51,7 +56,28 @@ serve(async req => {
         (paystack.mode === 'live' && payment.metadata?.paystack_mode !== 'live')) {
       return json({ error: 'Payment was initialized in a different environment.' }, 409)
     }
-    if (payment.status === 'paid') return json({ status: 'paid', verified: true, purpose: payment.purpose })
+
+    const rpcName = confirmationRpc(payment.purpose)
+
+    // A settled payment must still pass the database's idempotent entitlement check.
+    // This prevents stale "paid" rows from reporting verified access after a refund,
+    // revoked course enrollment, or missing subscription/product entitlement.
+    if (payment.status === 'paid') {
+      const { data: entitlementValid, error: entitlementError } = await admin.rpc(rpcName, {
+        p_reference: reference,
+        p_amount_minor: Number(payment.amount_minor),
+        p_currency: String(payment.currency),
+        p_paid_at: new Date().toISOString()
+      })
+      if (entitlementError) throw entitlementError
+      return json({
+        status: 'paid',
+        verified: entitlementValid === true,
+        purpose: payment.purpose,
+        ...(entitlementValid === true ? {} : { error: 'Payment is settled, but its entitlement is unavailable.' })
+      }, entitlementValid === true ? 200 : 409)
+    }
+
     if (payment.status !== 'pending') return json({ status: payment.status, verified: false, purpose: payment.purpose })
     const response = await fetch('https://api.paystack.co/transaction/verify/' + encodeURIComponent(reference), {
       headers: { Authorization: 'Bearer ' + secret }
@@ -78,9 +104,6 @@ serve(async req => {
       return json({ error: 'Payment verification details did not match.' }, 409)
     }
 
-    const rpcName = payment.purpose === 'product_purchase' ? 'confirm_product_payment'
-      : payment.purpose === 'course_enrollment' ? 'confirm_course_payment'
-      : 'confirm_paystack_payment'
     const { data: processed, error: processError } = await admin.rpc(rpcName, {
       p_reference: reference, p_amount_minor: Number(charge.amount),
       p_currency: String(charge.currency), p_paid_at: charge.paid_at || new Date().toISOString()
