@@ -96,7 +96,8 @@ serve(async req => {
         .select('id,title,instructor_id,price_minor,currency,is_published')
         .eq('id', courseId).eq('is_published', true).maybeSingle()
       if (courseError) throw courseError
-      if (!course || Number(course.price_minor) < 100) {
+      const coursePriceMinor = Number(course?.price_minor)
+      if (!course || !Number.isSafeInteger(coursePriceMinor) || coursePriceMinor < 100) {
         return json({ error: 'This paid course is not available for checkout.' }, 404)
       }
       if (course.instructor_id === user.id) return json({ error: 'You cannot enrol in your own course.' }, 403)
@@ -107,7 +108,7 @@ serve(async req => {
       if (existing) return json({ error: 'You are already enrolled in this course.' }, 409)
       currency = String(course.currency || 'NGN').trim().toUpperCase()
       if (currency !== 'NGN') return json({ error: 'This checkout currently supports NGN only.' }, 400)
-      amountMinor = Number(course.price_minor)
+      amountMinor = coursePriceMinor
       purpose = 'course_enrollment'
       metadata = { course_id: course.id, instructor_id: course.instructor_id, course_title: course.title }
       paystackMetadata = {
