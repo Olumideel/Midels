@@ -1357,7 +1357,7 @@ async function renderFriendsPanel() {
         ${avatarMarkup(u, 'freq-av')}
         <div class="freq-info">
           <div class="freq-name">${escHTML(u.name||'Unknown')}</div>
-          <div class="freq-meta">${u.role||''} · ${u.location||''}</div>
+          <div class="freq-meta">${escHTML(u.role||'')} · ${escHTML(u.location||'')}</div>
           <div class="freq-btns"><button class="freq-btn withdraw" onclick="withdrawFriendRequest('${r.id}','${r.receiver_id}')">Withdraw</button></div>
         </div>
       </div>`;
@@ -1378,7 +1378,7 @@ async function renderFollowingPanel() {
       ${avatarMarkup(u, 'fi-av')}
       <div class="fi-info">
         <div class="fi-name">${escHTML(u.name||'Unknown')}</div>
-        <div class="fi-role">${u.role||''} · ${u.location||''}</div>
+        <div class="fi-role">${escHTML(u.role||'')} · ${escHTML(u.location||'')}</div>
       </div>
       <button class="fi-unfollow" onclick="toggleFollow('${uid}')">Unfollow</button>
     </div>`;
