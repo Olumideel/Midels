@@ -142,6 +142,7 @@ begin
         and s.provider_reference=p_reference
         and s.plan_code=payment_row.metadata->>'plan_code'
         and s.status in ('active','trialing','past_due')
+        -- Do not trust a stale subscription status outside its persisted billing window.
         and s.current_period_start is not null
         and s.current_period_start <= now()
         and s.current_period_end is not null
