@@ -6,7 +6,7 @@ export function paystackMetadataMatches(
   received: Metadata,
   userId: string
 ): boolean {
-  if (!received || received.user_id !== userId || !expected) return false
+  if (!received || received.user_id !== userId || received.purpose !== purpose || !expected) return false
 
   switch (purpose) {
     case 'subscription':
