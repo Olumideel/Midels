@@ -79,9 +79,17 @@ serve(async req => {
     if (event.event === 'charge.failed') {
       const reference = event.data?.domain === paystack.expectedDomain ? event.data?.reference : null
       if (reference) {
-        const { error } = await admin.from('payments').update({ status: 'failed', updated_at: new Date().toISOString() })
-          .eq('reference', reference).eq('status', 'pending')
-        if (error) throw error
+        const { data: failedPayment, error: failedLookupError } = await admin.from('payments')
+          .select('metadata').eq('reference', reference).eq('provider', 'paystack').maybeSingle()
+        if (failedLookupError) throw failedLookupError
+        const environmentMatches = failedPayment &&
+          ((!failedPayment.metadata?.paystack_mode && paystack.mode === 'test') ||
+            failedPayment.metadata?.paystack_mode === paystack.mode)
+        if (environmentMatches) {
+          const { error } = await admin.from('payments').update({ status: 'failed', updated_at: new Date().toISOString() })
+            .eq('reference', reference).eq('provider', 'paystack').eq('status', 'pending')
+          if (error) throw error
+        }
       }
     }
 
@@ -97,6 +105,17 @@ serve(async req => {
           !Number.isSafeInteger(amountMinor) || amountMinor <= 0 ||
           !/^[A-Z]{3}$/.test(currency)) {
         console.error('Paystack refund notification did not contain valid test-mode refund details.')
+        return json({ received: true, processed: false })
+      }
+
+      const { data: refundPayment, error: refundPaymentLookupError } = await admin.from('payments')
+        .select('metadata').eq('reference', transactionReference).eq('provider', 'paystack').maybeSingle()
+      if (refundPaymentLookupError) throw refundPaymentLookupError
+      const refundEnvironmentMatches = refundPayment &&
+        ((!refundPayment.metadata?.paystack_mode && paystack.mode === 'test') ||
+          refundPayment.metadata?.paystack_mode === paystack.mode)
+      if (!refundEnvironmentMatches) {
+        console.error('Paystack refund environment does not match the original checkout environment.')
         return json({ received: true, processed: false })
       }
 
