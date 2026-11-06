@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - release/paystack-guarded-integrated-candidate
   push:
     branches:
       - main
