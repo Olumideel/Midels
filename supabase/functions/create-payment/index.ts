@@ -127,7 +127,7 @@ serve(async req => {
       amountMinor = PLANS[planCode][billingInterval as 'monthly' | 'annual']
       metadata = { plan_code: planCode, billing_interval: billingInterval }
       paystackMetadata = {
-        user_id: user.id, plan_code: planCode, billing_interval: billingInterval,
+        user_id: user.id, purpose, plan_code: planCode, billing_interval: billingInterval,
         custom_fields: [
           { display_name: 'Plan', variable_name: 'plan', value: planCode },
           { display_name: 'Billing period', variable_name: 'billing_period', value: billingInterval }
