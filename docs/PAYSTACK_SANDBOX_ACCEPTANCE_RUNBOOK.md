@@ -49,6 +49,7 @@ Record the test-mode transaction reference, event identifier, expected outcome, 
 | Checkout initialization | Signed-in active test user starts one paid course or digital-product checkout | A pending payment is created for NGN minor units; Paystack returns a test authorization URL; no entitlement is granted yet |
 | Authenticated verification | Complete the sandbox checkout, then call verification as the same signed-in user | Exact reference, test domain, amount, currency, owner and metadata match; one payment confirmation and one entitlement |
 | Wrong user | Attempt to verify another user's reference | Request is rejected; no payment or entitlement changes |
+| Metadata mismatch | In isolated sandbox fixtures, alter the returned purpose, subscription plan/billing interval, product/seller ID, or course/instructor ID while keeping the original payment reference | Verification and webhook processing fail closed; no payment confirmation, entitlement, or refund-side effect is created |
 | Wrong environment | Use a live-domain transaction or mismatched key/domain | Rejected; no payment confirmation or entitlement |
 | Valid signed webhook | Deliver a timestamped `Paystack-Signature` generated for the exact raw body | Accepted; event processed once |
 | Webhook ping | Deliver a validly signed Paystack ping event | 2xx response; no payment or entitlement mutation |
@@ -70,7 +71,7 @@ Before requesting approval to integrate or deploy, attach a redacted test report
 1. Git commit SHA and CI run links for the exact candidate commit.
 2. Confirmation that all three payment functions are built from the same reviewed commit.
 3. Sandbox references and event IDs for successful checkout, verification, webhook, duplicate delivery, partial refund, and full refund cases.
-4. Negative-test outcomes for wrong user, wrong environment, invalid signature, stale signature, conflicting duplicate, and over-refund.
+4. Negative-test outcomes for wrong user, wrong environment, mismatched payment metadata, invalid signature, stale signature, conflicting duplicate, and over-refund.
 5. Before/after database evidence showing exactly one entitlement after payment, retained access after partial refund, and revoked access after full refund.
 6. Record the leaked-password-protection state accurately: unavailable on the current Free plan; document compensating controls and explicit risk acceptance if a production release is later considered.
 7. Confirmation that no live credentials were configured and no live transactions occurred.
