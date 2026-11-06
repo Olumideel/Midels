@@ -277,7 +277,7 @@ SET search_path TO ''
 AS $function$
   SELECT CASE
     WHEN auth.uid() IS NULL
-      OR (auth.uid() IS DISTINCT FROM a AND auth.uid() IS DISTINCT FROM b)
+      OR auth.uid() IS DISTINCT FROM a
     THEN false
     ELSE EXISTS (
       SELECT 1
@@ -308,7 +308,7 @@ BEGIN
   IF position('SECURITY DEFINER' IN upper(function_definition)) = 0
      OR position('auth.uid()' IN function_definition) = 0
      OR position('IS DISTINCT FROM a' IN function_definition) = 0
-     OR position('IS DISTINCT FROM b' IN function_definition) = 0 THEN
+     OR position('IS DISTINCT FROM b' IN function_definition) > 0 THEN
     RAISE EXCEPTION 'Block lookup must be scoped to a caller participant';
   END IF;
   IF has_function_privilege('anon', function_oid, 'EXECUTE') THEN
