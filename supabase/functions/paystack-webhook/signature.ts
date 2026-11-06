@@ -29,7 +29,7 @@ export async function verifyModernPaystackSignature(
   const timestampFields = fields.filter(part => part.startsWith('t='))
   if (timestampFields.length !== 1) return false
   const timestampText = timestampFields[0].slice(2)
-  if (!/^\\d+$/.test(timestampText)) return false
+  if (!/^\d+$/.test(timestampText)) return false
   const timestamp = Number(timestampText)
   if (!Number.isSafeInteger(timestamp) || Math.abs(nowSeconds - timestamp) > 300) return false
 
