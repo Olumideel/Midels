@@ -27,6 +27,7 @@ jobs:
       - name: Test environment isolation and webhook signatures
         run: |
           deno test supabase/functions/_shared/paystack/config_test.ts
+          deno test supabase/functions/_shared/paystack/metadata_test.ts
           deno test supabase/functions/paystack-webhook/signature_test.ts
 
       - name: Validate database security migration invariants
