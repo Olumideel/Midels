@@ -1679,7 +1679,7 @@ async function buyMarketplaceProduct(productId){
 }
 async function downloadMarketplaceProduct(productId){
  if(!STATE.currentUser){openAuth('login');return}const {data:product,error}=await sb.from('products').select('file_path,title,seller_id').eq('id',productId).maybeSingle();if(error||!product?.file_path){toast('Download is not available for this product.','error');return}
- if(product.seller_id!==STATE.currentUser.id){const {data:purchase,error:purchaseError}=await sb.from('product_purchases').select('id,refunded_at,payments(status)').eq('product_id',productId).eq('buyer_id',STATE.currentUser.id).is('refunded_at',null).maybeSingle();if(purchaseError||purchase?.refunded_at!==null||purchase?.payments?.status!=='paid'){toast('A completed, non-refunded purchase is required to download this file.','error');return}}
+ if(product.seller_id!==STATE.currentUser.id){const {data:purchase,error:purchaseError}=await sb.from('product_purchases').select('id,refunded_at,payments(status)').eq('product_id',productId).eq('buyer_id',STATE.currentUser.id).is('refunded_at',null).order('created_at',{ascending:false}).limit(1).maybeSingle();if(purchaseError||purchase?.refunded_at!==null||purchase?.payments?.status!=='paid'){toast('A completed, non-refunded purchase is required to download this file.','error');return}}
  const {data,error:signError}=await sb.storage.from('product-files').createSignedUrl(product.file_path,300);if(signError||!data?.signedUrl){toast('Secure download could not be created.','error');return}window.location.assign(data.signedUrl);
 }
 
