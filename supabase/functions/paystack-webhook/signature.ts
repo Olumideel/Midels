@@ -1,8 +1,9 @@
 const encoder = new TextEncoder()
 
-function hexToBytes(hex: string): Uint8Array | null {
+function hexToBytes(hex: string): ArrayBuffer | null {
   if (!/^[a-f0-9]{128}$/i.test(hex)) return null
-  return new Uint8Array(hex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)))
+  const bytes = new Uint8Array(hex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)))
+  return bytes.buffer as ArrayBuffer
 }
 
 async function hmacKey(secret: string): Promise<CryptoKey> {
