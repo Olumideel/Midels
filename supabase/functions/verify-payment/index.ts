@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { resolvePaystackConfig } from '../_shared/paystack/config.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': 'https://olumideel.github.io',
@@ -32,10 +33,12 @@ serve(async req => {
     if (profile?.account_status !== 'active') {
       return json({ error: 'Your account is not active. Payment verification is unavailable.' }, 403)
     }
-    const secret = Deno.env.get('PAYSTACK_SECRET_KEY')
-    if (!secret) throw new Error('Payment verification is not configured.')
-    if (!secret.startsWith('sk_test_')) {
-      return json({ error: 'Payment verification is restricted to Paystack test mode. Live payments are disabled.' }, 503)
+    const mode = Deno.env.get('PAYSTACK_MODE')
+    const secret = Deno.env.get('PAYSTACK_SECRET_KEY') || ''
+    const paystack = resolvePaystackConfig(mode, secret)
+    if (!paystack.valid) {
+      console.error('Paystack verification configuration is invalid for the selected environment.')
+      return json({ error: 'Payment verification is not configured for the selected environment.' }, 503)
     }
 
     const { data: payment, error: lookupError } = await admin.from('payments')
@@ -53,7 +56,7 @@ serve(async req => {
       return json({ status: 'pending', verified: false, purpose: payment.purpose })
     }
     const charge = result.data
-    if (charge.domain !== 'test') {
+    if (charge.domain !== paystack.expectedDomain) {
       console.error('Paystack verification returned a non-test transaction; no entitlement was granted.')
       return json({ error: 'Only Paystack test-mode transactions can be verified for this application.' }, 409)
     }

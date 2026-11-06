@@ -1,5 +1,7 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { resolvePaystackConfig } from '../_shared/paystack/config.ts'
+import { verifyLegacyPaystackSignature, verifyModernPaystackSignature } from './signature.ts'
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
@@ -8,25 +10,33 @@ serve(async req => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
   try {
     const body = await req.text()
-    const signature = req.headers.get('x-paystack-signature') || ''
+    const mode = Deno.env.get('PAYSTACK_MODE')
     const secret = Deno.env.get('PAYSTACK_SECRET_KEY') || ''
-    if (!secret.startsWith('sk_test_')) {
-      console.error('Paystack webhook is disabled because the configured key is not a test secret.')
-      return new Response('Test-mode webhook only', { status: 503 })
+    const paystack = resolvePaystackConfig(mode, secret)
+    if (!paystack.valid) {
+      console.error('Paystack webhook configuration is invalid for the selected environment.')
+      return new Response('Webhook environment is not configured', { status: 503 })
     }
-    if (!/^[a-f0-9]{128}$/i.test(signature)) return new Response('Invalid signature', { status: 401 })
-    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret),
-      { name: 'HMAC', hash: 'SHA-512' }, false, ['verify'])
-    const signatureBytes = new Uint8Array((signature.match(/.{2}/g) || []).map(byte => parseInt(byte, 16)))
-    const valid = await crypto.subtle.verify('HMAC', key, signatureBytes, new TextEncoder().encode(body))
-    if (!valid) return new Response('Invalid signature', { status: 401 })
+    const modernHeader = req.headers.get('paystack-signature') || ''
+    let signatureValid = false
+    if (modernHeader) {
+      const current = Deno.env.get('PAYSTACK_WEBHOOK_SECRET') || ''
+      const previous = Deno.env.get('PAYSTACK_WEBHOOK_SECRET_PREVIOUS') || ''
+      const signingSecrets = [current, previous].filter(value => value.startsWith('whsec_'))
+      if (!signingSecrets.length) return new Response('Webhook signing secret is not configured', { status: 503 })
+      signatureValid = await verifyModernPaystackSignature(body, modernHeader, signingSecrets)
+    } else if (paystack.mode === 'test') {
+      // Backward compatibility is intentionally test-only. Live webhooks require timestamped whsec_ signatures.
+      signatureValid = await verifyLegacyPaystackSignature(body, req.headers.get('x-paystack-signature') || '', secret)
+    }
+    if (!signatureValid) return new Response('Invalid signature', { status: 401 })
 
     const event = JSON.parse(body)
     const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
     if (event.event === 'charge.success') {
       const charge = event.data
-      if (!charge?.reference || charge.status !== 'success' || charge.domain !== 'test') {
+      if (!charge?.reference || charge.status !== 'success' || charge.domain !== paystack.expectedDomain) {
         console.error('Ignoring a non-test or invalid Paystack charge-success event.')
         return json({ received: true, processed: false })
       }
@@ -62,7 +72,7 @@ serve(async req => {
     }
 
     if (event.event === 'charge.failed') {
-      const reference = event.data?.domain === 'test' ? event.data?.reference : null
+      const reference = event.data?.domain === paystack.expectedDomain ? event.data?.reference : null
       if (reference) {
         const { error } = await admin.from('payments').update({ status: 'failed', updated_at: new Date().toISOString() })
           .eq('reference', reference).eq('status', 'pending')
@@ -76,7 +86,7 @@ serve(async req => {
       const refundReference = refund?.refund_reference
       const amountMinor = Number(refund?.amount)
       const currency = String(refund?.currency || '').trim().toUpperCase()
-      if (refund?.status !== 'processed' || refund?.domain !== 'test' ||
+      if (refund?.status !== 'processed' || refund?.domain !== paystack.expectedDomain ||
           typeof transactionReference !== 'string' || !transactionReference.trim() ||
           typeof refundReference !== 'string' || !refundReference.trim() ||
           !Number.isSafeInteger(amountMinor) || amountMinor <= 0 ||
