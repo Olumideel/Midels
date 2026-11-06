@@ -1777,12 +1777,35 @@ async function enrolLearningCourse(courseId){
  if(enrolError){toast('Enrolment failed: '+enrolError.message,'error');return}
  toast('You are enrolled!','success');await loadLearningDashboard();
 }
+let academyEditorReturnFocus=null;
+function academyEditorHandleKeydown(event){
+ if(event.key==='Escape'){event.preventDefault();closeAcademyEditor();return}
+ if(event.key!=='Tab')return;
+ const dialog=event.currentTarget;
+ const focusable=Array.from(dialog.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter(element=>!element.hidden&&element.getAttribute('aria-hidden')!=='true');
+ if(!focusable.length){event.preventDefault();dialog.focus();return}
+ const first=focusable[0],last=focusable[focusable.length-1],active=document.activeElement;
+ if(event.shiftKey&&(active===first||active===dialog)){event.preventDefault();last.focus()}
+ else if(!event.shiftKey&&(active===last||active===dialog)){event.preventDefault();first.focus()}
+}
 function openAcademyEditor(config){
  const host=document.getElementById('academy-editor');if(!host)return;
- host.innerHTML='<div class="academy-editor-backdrop" role="presentation"><section class="academy-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="academy-editor-title" aria-describedby="academy-editor-description"><div class="academy-editor-heading"><div><h3 id="academy-editor-title">'+escHTML(config.title)+'</h3><p id="academy-editor-description">'+escHTML(config.description)+'</p></div><button type="button" class="academy-editor-close" onclick="closeAcademyEditor()" aria-label="Close editor">×</button></div><form id="academy-editor-form" data-action="'+escHTML(config.action)+'" data-course-id="'+escHTML(config.courseId||'')+'" data-assessment-id="'+escHTML(config.assessmentId||'')+'" data-lesson-id="'+escHTML(config.lessonId||'')+'" data-question-id="'+escHTML(config.questionId||'')+'" onsubmit="submitAcademyEditor(event)">'+config.fields+'<div class="academy-editor-actions"><button type="button" class="btn bo" onclick="closeAcademyEditor()">Cancel</button><button type="submit" class="btn bp">Save draft</button></div></form></section></div>';
- host.hidden=false;const first=host.querySelector('input:not([type=checkbox]),textarea');if(first)first.focus();
+ academyEditorReturnFocus=document.activeElement;
+ host.innerHTML='<div class="academy-editor-backdrop" role="presentation"><section class="academy-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="academy-editor-title" aria-describedby="academy-editor-description" tabindex="-1"><div class="academy-editor-heading"><div><h3 id="academy-editor-title">'+escHTML(config.title)+'</h3><p id="academy-editor-description">'+escHTML(config.description)+'</p></div><button type="button" class="academy-editor-close" onclick="closeAcademyEditor()" aria-label="Close editor">×</button></div><form id="academy-editor-form" data-action="'+escHTML(config.action)+'" data-course-id="'+escHTML(config.courseId||'')+'" data-assessment-id="'+escHTML(config.assessmentId||'')+'" data-lesson-id="'+escHTML(config.lessonId||'')+'" data-question-id="'+escHTML(config.questionId||'')+'" onsubmit="submitAcademyEditor(event)">'+config.fields+'<div class="academy-editor-actions"><button type="button" class="btn bo" onclick="closeAcademyEditor()">Cancel</button><button type="submit" class="btn bp">Save draft</button></div></form></section></div>';
+ host.hidden=false;
+ const dialog=host.querySelector('.academy-editor-dialog');
+ dialog?.addEventListener('keydown',academyEditorHandleKeydown);
+ const first=host.querySelector('input:not([type=checkbox]),textarea');
+ if(first)first.focus();else dialog?.focus();
 }
-function closeAcademyEditor(){const host=document.getElementById('academy-editor');if(host){host.hidden=true;host.innerHTML=''}}
+function closeAcademyEditor(){
+ const host=document.getElementById('academy-editor');if(!host)return;
+ const dialog=host.querySelector('.academy-editor-dialog');
+ dialog?.removeEventListener('keydown',academyEditorHandleKeydown);
+ host.hidden=true;host.innerHTML='';
+ const restore=academyEditorReturnFocus;academyEditorReturnFocus=null;
+ if(restore&&typeof restore.focus==='function'&&restore.isConnected)restore.focus();
+}
 async function submitAcademyEditor(event){
  event.preventDefault();const form=event.currentTarget,values=new FormData(form),action=form.dataset.action,courseId=form.dataset.courseId,assessmentId=form.dataset.assessmentId,questionId=form.dataset.questionId,submit=form.querySelector('button[type=submit]');if(submit)submit.disabled=true;
  if(action==='courseDetails'){
