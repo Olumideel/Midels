@@ -8,26 +8,62 @@ serve(async req => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
   try {
     const body = await req.text()
-    const signature = req.headers.get('x-paystack-signature') || ''
+    const mode = Deno.env.get('PAYSTACK_MODE') || 'test'
     const secret = Deno.env.get('PAYSTACK_SECRET_KEY') || ''
-    if (!secret.startsWith('sk_test_')) {
-      console.error('Paystack webhook is disabled because the configured key is not a test secret.')
-      return new Response('Test-mode webhook only', { status: 503 })
+    const webhookSecret = Deno.env.get('PAYSTACK_WEBHOOK_SECRET') || ''
+    const expectedPrefix = mode === 'live' ? 'sk_live_' : 'sk_test_'
+    if (!['test', 'live'].includes(mode) || !secret.startsWith(expectedPrefix)) {
+      console.error('Paystack webhook configuration is missing or mismatched.')
+      return new Response('Webhook environment is not configured', { status: 503 })
     }
-    if (!/^[a-f0-9]{128}$/i.test(signature)) return new Response('Invalid signature', { status: 401 })
-    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret),
-      { name: 'HMAC', hash: 'SHA-512' }, false, ['verify'])
-    const signatureBytes = new Uint8Array((signature.match(/.{2}/g) || []).map(byte => parseInt(byte, 16)))
-    const valid = await crypto.subtle.verify('HMAC', key, signatureBytes, new TextEncoder().encode(body))
-    if (!valid) return new Response('Invalid signature', { status: 401 })
 
+    const modernSignature = req.headers.get('paystack-signature') || ''
+    let signatureValid = false
+    if (modernSignature) {
+      if (!webhookSecret.startsWith('whsec_')) {
+        console.error('Paystack webhook signing secret is not configured.')
+        return new Response('Webhook signing secret is not configured', { status: 503 })
+      }
+      const fields = modernSignature.split(',').map(part => part.trim())
+      const timestampField = fields.find(part => part.startsWith('t='))
+      const timestamp = timestampField ? Number(timestampField.slice(2)) : NaN
+      if (!Number.isSafeInteger(timestamp) || Math.abs(Math.floor(Date.now() / 1000) - timestamp) > 300) {
+        return new Response('Expired or invalid webhook timestamp', { status: 401 })
+      }
+      const signedValues = fields.filter(part => part.startsWith('v1=')).map(part => part.slice(3))
+      const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(webhookSecret),
+        { name: 'HMAC', hash: 'SHA-512' }, false, ['verify'])
+      const signedPayload = new TextEncoder().encode(timestamp + '.' + body)
+      for (const value of signedValues) {
+        const separator = value.indexOf(':')
+        const hex = separator >= 0 ? value.slice(separator + 1) : ''
+        if (!/^[a-f0-9]{128}$/i.test(hex)) continue
+        const bytes = new Uint8Array(hex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)))
+        if (await crypto.subtle.verify('HMAC', key, bytes, signedPayload)) {
+          signatureValid = true
+          break
+        }
+      }
+    } else if (mode === 'test') {
+      // Legacy test-mode compatibility only. Live mode requires Paystack's timestamped whsec_ signature.
+      const legacySignature = req.headers.get('x-paystack-signature') || ''
+      if (/^[a-f0-9]{128}$/i.test(legacySignature)) {
+        const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret),
+          { name: 'HMAC', hash: 'SHA-512' }, false, ['verify'])
+        const bytes = new Uint8Array(legacySignature.match(/.{2}/g)!.map(byte => parseInt(byte, 16)))
+        signatureValid = await crypto.subtle.verify('HMAC', key, bytes, new TextEncoder().encode(body))
+      }
+    }
+    if (!signatureValid) return new Response('Invalid signature', { status: 401 })
+
+    const expectedDomain = mode
     const event = JSON.parse(body)
     const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
     if (event.event === 'charge.success') {
       const charge = event.data
-      if (!charge?.reference || charge.status !== 'success' || charge.domain !== 'test') {
-        console.error('Ignoring a non-test or invalid Paystack charge-success event.')
+      if (!charge?.reference || charge.status !== 'success' || charge.domain !== expectedDomain) {
+        console.error('Ignoring a wrong-environment or invalid Paystack charge-success event.')
         return json({ received: true, processed: false })
       }
       const { data: payment, error: lookupError } = await admin.from('payments')
@@ -62,7 +98,7 @@ serve(async req => {
     }
 
     if (event.event === 'charge.failed') {
-      const reference = event.data?.domain === 'test' ? event.data?.reference : null
+      const reference = event.data?.domain === expectedDomain ? event.data?.reference : null
       if (reference) {
         const { error } = await admin.from('payments').update({ status: 'failed', updated_at: new Date().toISOString() })
           .eq('reference', reference).eq('status', 'pending')
@@ -76,12 +112,12 @@ serve(async req => {
       const refundReference = refund?.refund_reference
       const amountMinor = Number(refund?.amount)
       const currency = String(refund?.currency || '').trim().toUpperCase()
-      if (refund?.status !== 'processed' || refund?.domain !== 'test' ||
+      if (refund?.status !== 'processed' || refund?.domain !== expectedDomain ||
           typeof transactionReference !== 'string' || !transactionReference.trim() ||
           typeof refundReference !== 'string' || !refundReference.trim() ||
           !Number.isSafeInteger(amountMinor) || amountMinor <= 0 ||
           !/^[A-Z]{3}$/.test(currency)) {
-        console.error('Paystack refund notification did not contain valid test-mode refund details.')
+        console.error('Paystack refund notification did not contain valid environment-specific refund details.')
         return json({ received: true, processed: false })
       }
 
