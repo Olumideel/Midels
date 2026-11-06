@@ -142,6 +142,11 @@ begin
         and s.provider_reference=p_reference
         and s.plan_code=payment_row.metadata->>'plan_code'
         and s.status in ('active','trialing','past_due')
+        -- Do not trust a stale subscription status outside its persisted billing window.
+        and s.current_period_start is not null
+        and s.current_period_start <= now()
+        and s.current_period_end is not null
+        and s.current_period_end > now()
     );
   end if;
   if payment_row.status<>'pending' then return false; end if;
@@ -310,6 +315,13 @@ BEGIN
 
     IF position('payment_row.provider IS DISTINCT FROM ''paystack''' IN function_definition)=0 THEN
       RAISE EXCEPTION 'Provider binding missing from %', signature;
+    END IF;
+
+    IF signature='public.confirm_paystack_payment(text,bigint,text,timestamp with time zone)' THEN
+      IF position('s.current_period_start <= now()' IN function_definition)=0
+         OR position('s.current_period_end > now()' IN function_definition)=0 THEN
+        RAISE EXCEPTION 'Active subscription period bounds missing from %', signature;
+      END IF;
     END IF;
     IF NOT coalesce((SELECT proconfig @> ARRAY['search_path=""'] FROM pg_proc WHERE oid=function_oid::oid),false) THEN
       RAISE EXCEPTION 'Empty search_path missing from %', signature;
