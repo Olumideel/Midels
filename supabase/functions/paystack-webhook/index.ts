@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { resolvePaystackConfig } from '../_shared/paystack/config.ts'
+import { paystackMetadataMatches } from '../_shared/paystack/metadata.ts'
 import { verifyLegacyPaystackSignature, verifyModernPaystackSignature } from './signature.ts'
 
 const json = (body: unknown, status = 200) =>
@@ -51,16 +52,9 @@ serve(async req => {
         console.error('Webhook payment environment does not match the original checkout environment.')
         return json({ received: true, processed: false })
       }
-      let metadataMatches = payment.provider === 'paystack' && charge.metadata?.user_id === payment.user_id
-      if (payment.purpose === 'product_purchase') {
-        metadataMatches = metadataMatches &&
-          charge.metadata?.product_id === payment.metadata?.product_id &&
-          charge.metadata?.seller_id === payment.metadata?.seller_id
-      } else if (payment.purpose === 'course_enrollment') {
-        metadataMatches = metadataMatches &&
-          charge.metadata?.course_id === payment.metadata?.course_id &&
-          charge.metadata?.instructor_id === payment.metadata?.instructor_id
-      }
+      const metadataMatches = payment.provider === 'paystack' && paystackMetadataMatches(
+        payment.purpose, payment.metadata, charge.metadata, payment.user_id
+      )
       if (!metadataMatches || Number(charge.amount) !== Number(payment.amount_minor) ||
           String(charge.currency || '').toUpperCase() !== String(payment.currency || '').trim().toUpperCase()) {
         console.error('Paystack metadata, amount or currency did not match the pending payment.')

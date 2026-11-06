@@ -4,9 +4,11 @@ on:
   pull_request:
     branches:
       - main
+      - release/paystack-guarded-integrated-candidate
   push:
     branches:
       - main
+      - release/paystack-guarded-integrated-candidate
 
 permissions:
   contents: read
@@ -26,3 +28,21 @@ jobs:
 
       - name: Validate app.js syntax
         run: node --check app.js
+      - name: Assert draft course editor and database guards
+        run: |
+          node --input-type=commonjs - <<'NODE'
+          const fs = require('node:fs');
+          const source = fs.readFileSync('app.js', 'utf8');
+          for (const required of [
+            "async function openCourseDetailsEditor(courseId)",
+            "action:'courseDetails'",
+            "price_minor:Math.round(price*100),currency:'NGN'",
+            ".eq('instructor_id',STATE.currentUser.id).eq('is_published',false)"
+          ]) {
+            if (!source.includes(required)) throw new Error('Draft course editor regression: missing ' + required);
+          }
+          const migration = fs.readFileSync('supabase/migrations/20261106112516_enforce_academy_draft_editing_and_publication_readiness.sql', 'utf8');
+          if (!migration.includes('create policy courses_update_own') || !migration.includes('is_published = false') || !migration.includes('create trigger enforce_course_publication_readiness')) {
+            throw new Error('Course draft editing and publication-readiness database guards are missing.');
+          }
+          NODE
