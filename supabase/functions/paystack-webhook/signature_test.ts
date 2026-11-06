@@ -35,12 +35,12 @@ Deno.test('rejects expired and malformed timestamps', async () => {
   if (expired || malformed) throw new Error('Invalid timestamp must fail verification')
 })
 
-Deno.test('supports key rotation by accepting any valid v1 signature', async () => {
-  const oldDigest = await sign('whsec_old_signing_secret', now + '.' + body)
-  const currentDigest = await sign(signingSecret, now + '.' + body)
-  const header = `t=${now},v1=whk_old:${oldDigest},v1=whk_current:${currentDigest}`
+Deno.test('accepts a valid v1 signature when an earlier candidate is invalid', async () => {
+  const invalidDigest = await sign('whsec_different_signing_secret', now + '.' + body)
+  const validDigest = await sign(signingSecret, now + '.' + body)
+  const header = `t=${now},v1=whk_candidate:${invalidDigest},v1=whk_current:${validDigest}`
   const valid = await verifyModernPaystackSignature(body, header, signingSecret, now)
-  if (!valid) throw new Error('A valid current-key signature should pass alongside an old signature')
+  if (!valid) throw new Error('A valid signature must pass even when another v1 candidate is invalid')
 })
 
 Deno.test('rejects wrong signing-secret prefix and absent v1 signatures', async () => {
