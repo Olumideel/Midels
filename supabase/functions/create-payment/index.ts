@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { resolvePaystackConfig } from '../_shared/paystack/config.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': 'https://olumideel.github.io',
@@ -95,7 +96,8 @@ serve(async req => {
         .select('id,title,instructor_id,price_minor,currency,is_published')
         .eq('id', courseId).eq('is_published', true).maybeSingle()
       if (courseError) throw courseError
-      if (!course || Number(course.price_minor) < 100) {
+      const coursePriceMinor = Number(course?.price_minor)
+      if (!course || !Number.isSafeInteger(coursePriceMinor) || coursePriceMinor < 100) {
         return json({ error: 'This paid course is not available for checkout.' }, 404)
       }
       if (course.instructor_id === user.id) return json({ error: 'You cannot enrol in your own course.' }, 403)
@@ -106,7 +108,7 @@ serve(async req => {
       if (existing) return json({ error: 'You are already enrolled in this course.' }, 409)
       currency = String(course.currency || 'NGN').trim().toUpperCase()
       if (currency !== 'NGN') return json({ error: 'This checkout currently supports NGN only.' }, 400)
-      amountMinor = Number(course.price_minor)
+      amountMinor = coursePriceMinor
       purpose = 'course_enrollment'
       metadata = { course_id: course.id, instructor_id: course.instructor_id, course_title: course.title }
       paystackMetadata = {
@@ -134,17 +136,17 @@ serve(async req => {
     }
 
     const reference = 'GCH-' + crypto.randomUUID()
-    const secret = Deno.env.get('PAYSTACK_SECRET_KEY')
-    if (!secret) throw new Error('Payment service is not configured.')
-    if (!secret.startsWith('sk_test_')) {
-      return json({
-        error: 'All checkout is restricted to Paystack test mode while payment, refund and settlement flows are validated. Live charges are not enabled.'
-      }, 503)
+    const mode = Deno.env.get('PAYSTACK_MODE')
+    const secret = Deno.env.get('PAYSTACK_SECRET_KEY') || ''
+    const paystack = resolvePaystackConfig(mode, secret)
+    if (!paystack.valid) {
+      console.error('Paystack checkout configuration is invalid for the selected environment.')
+      return json({ error: 'Payment service is not configured for the selected Paystack environment.' }, 503)
     }
 
     const { error: insertError } = await admin.from('payments').insert({
       user_id: user.id, provider: 'paystack', reference, amount_minor: amountMinor,
-      currency, status: 'pending', purpose, metadata
+      currency, status: 'pending', purpose, metadata: { ...metadata, paystack_mode: paystack.mode }
     })
     if (insertError) throw insertError
 

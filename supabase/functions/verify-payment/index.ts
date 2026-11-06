@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { resolvePaystackConfig } from '../_shared/paystack/config.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': 'https://olumideel.github.io',
@@ -32,10 +33,12 @@ serve(async req => {
     if (profile?.account_status !== 'active') {
       return json({ error: 'Your account is not active. Payment verification is unavailable.' }, 403)
     }
-    const secret = Deno.env.get('PAYSTACK_SECRET_KEY')
-    if (!secret) throw new Error('Payment verification is not configured.')
-    if (!secret.startsWith('sk_test_')) {
-      return json({ error: 'Payment verification is restricted to Paystack test mode. Live payments are disabled.' }, 503)
+    const mode = Deno.env.get('PAYSTACK_MODE')
+    const secret = Deno.env.get('PAYSTACK_SECRET_KEY') || ''
+    const paystack = resolvePaystackConfig(mode, secret)
+    if (!paystack.valid) {
+      console.error('Paystack verification configuration is invalid for the selected environment.')
+      return json({ error: 'Payment verification is not configured for the selected environment.' }, 503)
     }
 
     const { data: payment, error: lookupError } = await admin.from('payments')
@@ -43,6 +46,10 @@ serve(async req => {
       .eq('reference', reference).eq('user_id', user.id).maybeSingle()
     if (lookupError) throw lookupError
     if (!payment) return json({ error: 'Payment record not found.' }, 404)
+    if ((payment.metadata?.paystack_mode && payment.metadata.paystack_mode !== paystack.mode) ||
+        (paystack.mode === 'live' && payment.metadata?.paystack_mode !== 'live')) {
+      return json({ error: 'Payment was initialized in a different environment.' }, 409)
+    }
     if (payment.status === 'paid') return json({ status: 'paid', verified: true, purpose: payment.purpose })
     if (payment.status !== 'pending') return json({ status: payment.status, verified: false, purpose: payment.purpose })
     const response = await fetch('https://api.paystack.co/transaction/verify/' + encodeURIComponent(reference), {
@@ -53,9 +60,9 @@ serve(async req => {
       return json({ status: 'pending', verified: false, purpose: payment.purpose })
     }
     const charge = result.data
-    if (charge.domain !== 'test') {
-      console.error('Paystack verification returned a non-test transaction; no entitlement was granted.')
-      return json({ error: 'Only Paystack test-mode transactions can be verified for this application.' }, 409)
+    if (charge.domain !== paystack.expectedDomain) {
+      console.error('Paystack verification returned a transaction from the wrong environment; no entitlement was granted.')
+      return json({ error: 'The payment environment did not match this application configuration.' }, 409)
     }
     if (charge.status !== 'success') return json({ status: charge.status || 'pending', verified: false, purpose: payment.purpose })
 

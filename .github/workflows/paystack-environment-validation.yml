@@ -1,0 +1,93 @@
+name: Paystack environment validation
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "supabase/functions/**"
+      - "supabase/migrations/20261106141500_enforce_active_account_on_member_definer_rpcs.sql"
+      - "supabase/migrations/20261106141600_restrict_backend_only_table_grants.sql"
+      - "supabase/migrations/20261106141700_require_paystack_provider_for_confirmation.sql"
+      - "supabase/migrations/20261106130000_harden_paystack_refund_accounting.sql"
+      - ".github/workflows/paystack-environment-validation.yml"
+permissions:
+  contents: read
+jobs:
+  validate-payment-functions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check payment functions
+        run: |
+          deno check supabase/functions/create-payment/index.ts
+          deno check supabase/functions/verify-payment/index.ts
+          deno check supabase/functions/paystack-webhook/index.ts
+      - name: Test environment isolation and webhook signatures
+        run: |
+          deno test supabase/functions/_shared/paystack/config_test.ts
+          deno test supabase/functions/paystack-webhook/signature_test.ts
+
+      - name: Validate database security migration invariants
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          root = Path("supabase/migrations")
+          member = (root / "20261106141500_enforce_active_account_on_member_definer_rpcs.sql").read_text().lower()
+          grants = (root / "20261106141600_restrict_backend_only_table_grants.sql").read_text().lower()
+          provider = (root / "20261106141700_require_paystack_provider_for_confirmation.sql").read_text().lower()
+          refunds = (root / "20261106130000_harden_paystack_refund_accounting.sql").read_text().lower()
+
+          member_functions = [
+              "get_assessment_for_student",
+              "mark_all_notifications_read",
+              "mark_notification_read",
+              "publish_course_assessment",
+              "submit_course_assessment",
+              "update_my_profile",
+          ]
+          for name in member_functions:
+              assert f"create or replace function public.{name}" in member, f"Missing member RPC: {name}"
+          assert member.count("private.is_active_user()") >= len(member_functions), "Missing active-account guard"
+          assert "set search_path to ''" in member, "Empty search_path missing"
+          assert "from public, anon" in member and "to authenticated, service_role" in member
+
+          assert "create or replace function private.is_blocked(a uuid, b uuid)" in member
+          assert "auth.uid() is distinct from a" in member, "Block lookup is not bound to caller as first party"
+          assert "auth.uid() is distinct from b" not in member, "Block lookup allows caller as arbitrary second party"
+          assert "revoke all on function private.is_blocked(uuid, uuid) from public, anon" in member
+          assert "grant execute on function private.is_blocked(uuid, uuid) to authenticated" in member
+
+          for table in ("public.audit_logs", "public.newsletter_subscribers"):
+              assert f"revoke all on table {table} from public, anon, authenticated" in grants
+              assert f"grant all on table {table} to service_role" in grants
+
+          for name in ("confirm_course_payment", "confirm_paystack_payment", "confirm_product_payment"):
+              assert f"create or replace function public.{name}" in provider
+          assert provider.count("payment_row.provider is distinct from 'paystack'") >= 3
+          assert "from public, anon, authenticated" in provider
+          assert provider.count("to service_role") >= 3
+          assert "and s.provider_reference=p_reference" in provider, "Paid subscription retries must verify the matching provider reference"
+          assert "and s.plan_code=payment_row.metadata->>'plan_code'" in provider, "Paid subscription retries must verify the purchased plan"
+          assert "s.status in ('active','trialing','past_due')" in provider, "Paid subscription retries must require an active entitlement state"
+
+          checkout = Path("supabase/functions/create-payment/index.ts").read_text()
+          assert "Number.isSafeInteger(coursePriceMinor)" in checkout, "Course checkout must reject unsafe or fractional minor-unit prices"
+          assert "amountMinor = coursePriceMinor" in checkout, "Course checkout must use the validated minor-unit amount"
+
+          assert "refund_reference text not null unique" in refunds, "Refund reference must be unique"
+          assert "for update" in refunds, "Refund processing must lock the payment row"
+          assert "on conflict (refund_reference) do nothing" in refunds, "Duplicate refund delivery must be idempotent"
+          assert "refund_row.amount_minor <> p_amount_minor" in refunds, "Duplicate refund references must reject altered amounts"
+          assert "refund_row.transaction_reference <> p_transaction_reference" in refunds, "Refund references must remain bound to their transaction"
+          assert "sum(amount_minor)" in refunds and "refunded_total > payment_row.amount_minor" in refunds, "Cumulative refunds must not exceed the original payment"
+          assert "if fully_refunded then" in refunds, "Entitlement revocation must be gated on full refund"
+          assert "set revoked_at = coalesce(revoked_at" in refunds, "Full refunds must revoke paid course access/certificates"
+          assert "set refunded_at = coalesce(refunded_at" in refunds, "Full refunds must mark digital-product purchases refunded"
+          assert "set status = 'cancelled'" in refunds and "provider_reference = p_transaction_reference" in refunds, "Full refunds must cancel the matching Paystack subscription"
+          assert "if fully_refunded then" in refunds, "Partial refunds must not enter the entitlement-revocation branch"
+          assert "from public, anon, authenticated" in refunds and "to service_role" in refunds, "Refund RPC must remain service-role only"
+          print("Database security and refund-accounting migration assertions passed.")
+          PY
