@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - release/paystack-guarded-integrated-candidate
+      - fix/marketplace-refunded-purchase-state
 
 permissions:
   contents: read
@@ -28,11 +29,17 @@ jobs:
 
       - name: Validate app.js syntax
         run: node --check app.js
-      - name: Assert draft course editor and database guards
+      - name: Assert refunded purchases are excluded from owned marketplace items
         run: |
           node --input-type=commonjs - <<'NODE'
           const fs = require('node:fs');
           const source = fs.readFileSync('app.js', 'utf8');
+          if (!source.includes("select('product_id,refunded_at,payments(status)').eq('buyer_id',STATE.currentUser.id).is('refunded_at',null)")) {
+            throw new Error('Marketplace ownership query must exclude refunded purchase records.');
+          }
+          if (!source.includes("filter(x=>x.payments?.status==='paid')")) {
+            throw new Error('Marketplace ownership state must require a paid linked payment.');
+          }
           for (const required of [
             "async function openCourseDetailsEditor(courseId)",
             "action:'courseDetails'",
