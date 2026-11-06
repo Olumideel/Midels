@@ -2064,4 +2064,3 @@ async function verifyCourseCertificate(){
  const valid=data.valid===true;
  result.innerHTML='<div class="academy-verification-result '+(valid?'is-valid':'is-revoked')+'"><strong>'+(valid?'✓ Valid certificate':'! Certificate revoked')+'</strong><p><b>Learner:</b> '+escHTML(data.student_name||'Not available')+'</p><p><b>Course:</b> '+escHTML(data.course_title||'Not available')+'</p><p><b>Issued:</b> '+(data.issued_at?escHTML(new Date(data.issued_at).toLocaleDateString()):'Not available')+'</p>'+(data.revoked_at?'<p><b>Revoked:</b> '+escHTML(new Date(data.revoked_at).toLocaleDateString())+'</p>':'')+'<p><b>Code:</b> '+escHTML(code)+'</p></div>';
 }
-}
