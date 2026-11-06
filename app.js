@@ -1091,9 +1091,10 @@ function getUser(id) {
 function avatarMarkup(profile, className, extraMarkup = '') {
   const user = profile || {};
   const fallback = escHTML(user.emoji || '👤');
-  const imageUrl = typeof user.avatar_url === 'string' && user.avatar_url.startsWith('https://') ? user.avatar_url : '';
+  const imageUrl = safeProfileLink(user.avatar_url);
   const image = imageUrl ? '<img src="' + escHTML(imageUrl) + '" alt="' + escHTML((user.name || user.full_name || 'Profile') + ' photo') + '" loading="lazy" onerror="this.remove()">' : '';
-  return '<div class="' + className + '" style="background:' + escHTML(user.color || '#2c5282') + '"><span class="avatar-fallback">' + fallback + '</span>' + image + extraMarkup + '</div>';
+  const avatarColor = typeof user.color === 'string' && /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(user.color) ? user.color : '#2c5282';
+  return '<div class="' + className + '" style="background:' + avatarColor + '"><span class="avatar-fallback">' + fallback + '</span>' + image + extraMarkup + '</div>';
 }
 
 // ── CONVERSATION-BASED REAL-TIME CHAT ───────────────────────────────
@@ -1472,7 +1473,7 @@ async function renderChefGrid(profiles) {
         ${avatarMarkup(u, 'chef-avatar')}
         <div class="chef-info">
           <div class="chef-name" role="button" tabindex="0" onclick="openPublicProfile('${u.id}')" onkeydown="if(event.key==='Enter'||event.key===' ')openPublicProfile('${u.id}')">${escHTML(u.name)}</div>
-          <div class="chef-role">${(u.role||'').replace('-', ' ')}</div>
+          <div class="chef-role">${escHTML((u.role||'').replace('-', ' '))}</div>
           <div class="chef-location">📍 ${escHTML(u.location || 'Location not set')}</div>
         </div>
       </div>
@@ -1506,8 +1507,9 @@ async function openMyProfile() {
   document.getElementById('profile-website').value = profile.website_url || '';
   document.getElementById('profile-instagram').value = profile.instagram_url || '';
   const avatar = document.getElementById('profile-avatar');
-  avatar.innerHTML = profile.avatar_url
-    ? '<img src="' + escHTML(profile.avatar_url) + '" alt="Profile photo" onerror="this.parentElement.textContent=\'👤\'">'
+  const avatarUrl = safeProfileLink(profile.avatar_url);
+  avatar.innerHTML = avatarUrl
+    ? '<img src="' + escHTML(avatarUrl) + '" alt="Profile photo" onerror="this.parentElement.textContent=\'👤\'">'
     : '👤';
   await loadMyPrivacyRequests();
   document.getElementById('profile-modal').classList.add('op');
@@ -1582,8 +1584,9 @@ async function saveMyProfile(event) {
   await loadAllProfiles();
   renderChefGrid(STATE.profiles);
   const avatar = document.getElementById('profile-avatar');
-  avatar.innerHTML = data.avatar_url
-    ? '<img src="' + escHTML(data.avatar_url) + '" alt="Profile photo" onerror="this.parentElement.textContent=\'👤\'">'
+  const savedAvatarUrl = safeProfileLink(data.avatar_url);
+  avatar.innerHTML = savedAvatarUrl
+    ? '<img src="' + escHTML(savedAvatarUrl) + '" alt="Profile photo" onerror="this.parentElement.textContent=\'👤\'">'
     : '👤';
   toast('Your profile has been saved.', 'success');
   closeMyProfile();
@@ -1600,7 +1603,7 @@ async function loadMarketplace(){
   const sellerIds=[...new Set(products.map(p=>p.seller_id))],{data:sellers}=await sb.from('profiles').select('id,full_name,display_name').in('id',sellerIds),sellerNames=new Map((sellers||[]).map(p=>[p.id,p.display_name||p.full_name||'Culinary creator']));
   let ownedIds=new Set();if(STATE.currentUser){const {data:owned}=await sb.from('product_purchases').select('product_id').eq('buyer_id',STATE.currentUser.id);ownedIds=new Set((owned||[]).map(x=>x.product_id))}
   catalogue.innerHTML=products.map(p=>{
-   const mine=STATE.currentUser?.id===p.seller_id,owned=ownedIds.has(p.id),image=p.cover_url?'<img src="'+escHTML(p.cover_url)+'" alt="" loading="lazy" style="width:100%;height:150px;object-fit:cover;border-radius:8px">':'<div style="height:110px;border-radius:8px;background:var(--ice);display:grid;place-items:center;font-size:42px">📚</div>',action=owned?'<button class="btn bp" onclick="downloadMarketplaceProduct(\''+escHTML(p.id)+'\')">Download purchase</button>':mine?'<span class="learn-muted">Your storefront item</span>':'<button class="btn bp" onclick="buyMarketplaceProduct(\''+escHTML(p.id)+'\')">Buy securely</button>',searchText=[p.title,p.description,p.category,p.product_type,sellerNames.get(p.seller_id)].filter(Boolean).join(' ').toLowerCase();
+   const mine=STATE.currentUser?.id===p.seller_id,owned=ownedIds.has(p.id),coverUrl=safeProfileLink(p.cover_url),image=coverUrl?'<img src="'+escHTML(coverUrl)+'" alt="" loading="lazy" style="width:100%;height:150px;object-fit:cover;border-radius:8px">':'<div style="height:110px;border-radius:8px;background:var(--ice);display:grid;place-items:center;font-size:42px">📚</div>',action=owned?'<button class="btn bp" onclick="downloadMarketplaceProduct(\''+escHTML(p.id)+'\')">Download purchase</button>':mine?'<span class="learn-muted">Your storefront item</span>':'<button class="btn bp" onclick="buyMarketplaceProduct(\''+escHTML(p.id)+'\')">Buy securely</button>',searchText=[p.title,p.description,p.category,p.product_type,sellerNames.get(p.seller_id)].filter(Boolean).join(' ').toLowerCase();
    return '<article class="market-product" data-search="'+escHTML(searchText)+'" data-category="'+escHTML(p.category||'Other')+'" data-price="'+Number(p.price_minor||0)+'" data-created="'+new Date(p.created_at).getTime()+'">'+image+'<div class="market-product-type">'+escHTML((p.category||'Culinary resource').toUpperCase())+'</div><h4>'+escHTML(p.title)+'</h4><p class="learn-muted">'+escHTML(p.description||'Digital resource from a culinary creator.')+'</p><p class="learn-meta">By '+escHTML(sellerNames.get(p.seller_id)||'Culinary creator')+'</p><div class="market-product-footer"><strong class="public-price" data-public-price data-price-minor="'+Number(p.price_minor||0)+'" data-price-currency="'+escHTML(p.currency||'NGN')+'">'+formatPublicPrice(p.price_minor,p.currency)+'</strong>'+action+'</div></article>';
   }).join('');
  }
