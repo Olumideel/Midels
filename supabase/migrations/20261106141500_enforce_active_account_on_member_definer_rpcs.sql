@@ -265,6 +265,61 @@ GRANT EXECUTE ON FUNCTION public.submit_course_assessment(uuid, jsonb) TO authen
 GRANT EXECUTE ON FUNCTION public.update_my_profile(text,text,text,text,text,text,character,text,text,text) TO authenticated, service_role;
 
 
+
+-- The block lookup is used by follow/friend-request RLS policies and DM creation.
+-- Bind the lookup to the caller so it cannot be used as an arbitrary relationship probe.
+CREATE OR REPLACE FUNCTION private.is_blocked(a uuid, b uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path TO ''
+AS $function$
+  SELECT CASE
+    WHEN auth.uid() IS NULL
+      OR (auth.uid() IS DISTINCT FROM a AND auth.uid() IS DISTINCT FROM b)
+    THEN false
+    ELSE EXISTS (
+      SELECT 1
+      FROM public.blocks
+      WHERE (blocker_id = a AND blocked_id = b)
+         OR (blocker_id = b AND blocked_id = a)
+    )
+  END;
+$function$;
+
+REVOKE ALL ON FUNCTION private.is_blocked(uuid, uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION private.is_blocked(uuid, uuid) TO authenticated;
+
+DO $block_lookup_assertions$
+DECLARE
+  function_oid regprocedure := 'private.is_blocked(uuid,uuid)'::regprocedure;
+  function_definition text;
+  function_config text[];
+BEGIN
+  SELECT pg_get_functiondef(function_oid::oid), proconfig
+    INTO function_definition, function_config
+  FROM pg_proc
+  WHERE oid = function_oid::oid;
+
+  IF NOT coalesce(function_config @> ARRAY['search_path=""'], false) THEN
+    RAISE EXCEPTION 'Block lookup must retain an empty search_path';
+  END IF;
+  IF position('SECURITY DEFINER' IN upper(function_definition)) = 0
+     OR position('auth.uid()' IN function_definition) = 0
+     OR position('IS DISTINCT FROM a' IN function_definition) = 0
+     OR position('IS DISTINCT FROM b' IN function_definition) = 0 THEN
+    RAISE EXCEPTION 'Block lookup must be scoped to a caller participant';
+  END IF;
+  IF has_function_privilege('anon', function_oid, 'EXECUTE') THEN
+    RAISE EXCEPTION 'Anonymous execution must remain disabled for block lookup';
+  END IF;
+  IF NOT has_function_privilege('authenticated', function_oid, 'EXECUTE') THEN
+    RAISE EXCEPTION 'Authenticated execution is required by RLS policies';
+  END IF;
+END;
+$block_lookup_assertions$;
+
 DO $migration_assertions$
 DECLARE
   signature text;
