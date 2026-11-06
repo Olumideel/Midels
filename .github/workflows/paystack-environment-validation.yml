@@ -1,7 +1,7 @@
 name: Paystack environment validation
 on:
   pull_request:
-    branches: [main, feat/paystack-live-mode-guarded]
+    branches: [main, feat/paystack-live-mode-guarded, release/paystack-guarded-integrated-candidate]
     paths:
       - "supabase/functions/**"
       - "supabase/migrations/20261106141500_enforce_active_account_on_member_definer_rpcs.sql"
@@ -73,6 +73,20 @@ jobs:
           assert "and s.provider_reference=p_reference" in provider, "Paid subscription retries must verify the matching provider reference"
           assert "and s.plan_code=payment_row.metadata->>'plan_code'" in provider, "Paid subscription retries must verify the purchased plan"
           assert "s.status in ('active','trialing','past_due')" in provider, "Paid subscription retries must require an active entitlement state"
+          assert "e.revoked_at is null" in provider, "Paid course retries must reject revoked enrollments"
+          assert "from public.product_purchases pp" in provider, "Paid product retries must require an existing purchase record"
+          assert "pp.payment_id=payment_row.id" in provider, "Paid product retries must bind the purchase to the original payment"
+          assert "pp.product_id::text=payment_row.metadata->>'product_id'" in provider, "Paid product retries must bind the purchased product"
+          assert "pp.seller_id::text=payment_row.metadata->>'seller_id'" in provider, "Paid product retries must bind the seller"
+          assert "pp.buyer_id=payment_row.user_id" in provider, "Paid product retries must bind the buyer"
+          assert "pp.refunded_at is null" in provider, "Paid product retries must reject refunded purchases"
+
+          verify = Path("supabase/functions/verify-payment/index.ts").read_text()
+          assert "purpose === 'product_purchase' ? 'confirm_product_payment'" in verify, "Paid retries must route product payments to their confirmation RPC"
+          assert "purpose === 'course_enrollment' ? 'confirm_course_payment'" in verify, "Paid retries must route course payments to their confirmation RPC"
+          assert "if (payment.status === 'paid')" in verify and "await admin.rpc(rpcName" in verify, "Already-paid verification must revalidate the entitlement in the database"
+          assert "verified: entitlementValid === true" in verify, "Already-paid verification must report only a confirmed entitlement"
+          assert "entitlementValid === true ? 200 : 409" in verify, "Missing entitlements must fail closed with a conflict response"
 
           checkout = Path("supabase/functions/create-payment/index.ts").read_text()
           assert "Number.isSafeInteger(coursePriceMinor)" in checkout, "Course checkout must reject unsafe or fractional minor-unit prices"
