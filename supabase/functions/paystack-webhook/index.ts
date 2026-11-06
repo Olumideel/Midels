@@ -9,7 +9,8 @@ const json = (body: unknown, status = 200) =>
 serve(async req => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
   try {
-    const body = await req.text()
+    const rawBody = new Uint8Array(await req.arrayBuffer())
+    const body = new TextDecoder().decode(rawBody)
     const mode = Deno.env.get('PAYSTACK_MODE')
     const secret = Deno.env.get('PAYSTACK_SECRET_KEY') || ''
     const paystack = resolvePaystackConfig(mode, secret)
@@ -24,10 +25,10 @@ serve(async req => {
       const previous = Deno.env.get('PAYSTACK_WEBHOOK_SECRET_PREVIOUS') || ''
       const signingSecrets = [current, previous].filter(value => value.startsWith('whsec_'))
       if (!signingSecrets.length) return new Response('Webhook signing secret is not configured', { status: 503 })
-      signatureValid = await verifyModernPaystackSignature(body, modernHeader, signingSecrets)
+      signatureValid = await verifyModernPaystackSignature(rawBody, modernHeader, signingSecrets)
     } else if (paystack.mode === 'test') {
       // Backward compatibility is intentionally test-only. Live webhooks require timestamped whsec_ signatures.
-      signatureValid = await verifyLegacyPaystackSignature(body, req.headers.get('x-paystack-signature') || '', secret)
+      signatureValid = await verifyLegacyPaystackSignature(rawBody, req.headers.get('x-paystack-signature') || '', secret)
     }
     if (!signatureValid) return new Response('Invalid signature', { status: 401 })
 
