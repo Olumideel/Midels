@@ -55,7 +55,6 @@ Deno.test('legacy signature is restricted to test keys', async () => {
   if (await verifyLegacyPaystackSignature(body, d, 'sk_live_not_allowed')) throw Error('live legacy signature accepted')
 })
 
-
 Deno.test('accepts signatures at both freshness-window boundaries', async () => {
   for (const timestamp of [now - 300, now + 300]) {
     const digest = await sign(secret, timestamp + '.' + body)
@@ -65,12 +64,14 @@ Deno.test('accepts signatures at both freshness-window boundaries', async () => 
   }
 })
 
-Deno.test('rejects malformed, missing and out-of-window timestamps', async () => {
+Deno.test('rejects malformed, missing, ambiguous and out-of-window timestamps', async () => {
   const digest = await sign(secret, now + '.' + body)
   const invalidHeaders = [
     `v1=whk_current:${digest}`,
     `t=not-a-number,v1=whk_current:${digest}`,
     `t=1.5,v1=whk_current:${digest}`,
+    `t=+${now},v1=whk_current:${digest}`,
+    `t=${now},t=${now},v1=whk_current:${digest}`,
     `t=${now - 301},v1=whk_current:${digest}`,
     `t=${now + 301},v1=whk_current:${digest}`
   ]
