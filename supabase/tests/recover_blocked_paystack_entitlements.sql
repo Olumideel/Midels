@@ -40,6 +40,17 @@ BEGIN
  IF result->>'recovered'<>'true' OR NOT EXISTS(SELECT 1 FROM public.subscriptions WHERE user_id=buyer AND provider_reference=ref AND status='active' AND current_period_end>now())
  THEN RAISE EXCEPTION 'Subscription recovery failed: %',result; END IF;
 
+
+ ref:='GCH-'||gen_random_uuid()::text;
+ INSERT INTO public.payments(user_id,reference,amount_minor,currency,status,purpose,metadata,paid_at)
+ VALUES(buyer,ref,100000,'NGN','paid','course_enrollment',
+ jsonb_build_object('course_id',v_course_id,'instructor_id',seller,'entitlement_blocked_reason','account_not_active'),now()-interval '1 hour')
+ RETURNING id INTO v_payment_id;
+ INSERT INTO public.payment_refunds(payment_id,amount_minor,status) VALUES(v_payment_id,25000,'processed');
+ SELECT public.recover_blocked_paystack_entitlement(ref,100000,'NGN') INTO result;
+ IF result->>'recovered'<>'true' OR NOT EXISTS(SELECT 1 FROM public.enrollments WHERE enrollments.course_id=v_course_id AND student_id=buyer AND revoked_at IS NULL)
+ THEN RAISE EXCEPTION 'Partially refunded payment recovery failed: %',result; END IF;
+
  ref:='GCH-'||gen_random_uuid()::text;
  INSERT INTO public.payments(user_id,reference,amount_minor,currency,status,purpose,metadata,paid_at)
  VALUES(buyer,ref,10000,'NGN','paid','course_enrollment',
@@ -57,6 +68,15 @@ BEGIN
  SELECT public.recover_blocked_paystack_entitlement(ref,99000,'NGN') INTO result;
  IF result->>'recovered'<>'false' OR result->>'reason'<>'subscription_period_expired'
  THEN RAISE EXCEPTION 'Expired subscription recovery was not blocked: %',result; END IF;
+
+
+ ref:='GCH-'||gen_random_uuid()::text;
+ INSERT INTO public.payments(user_id,reference,amount_minor,currency,status,purpose,metadata,paid_at)
+ VALUES(buyer,ref,99000,'NGN','paid','subscription',
+ jsonb_build_object('plan_code','school','billing_interval','annual','entitlement_blocked_reason','account_not_active'),now());
+ SELECT public.recover_blocked_paystack_entitlement(ref,99000,'NGN') INTO result;
+ IF result->>'recovered'<>'false' OR result->>'reason'<>'newer_active_subscription_exists'
+ THEN RAISE EXCEPTION 'Recovery overwrote a newer active subscription: %',result; END IF;
 
  UPDATE public.profiles SET account_status='suspended' WHERE id=buyer;
  ref:='GCH-'||gen_random_uuid()::text;
