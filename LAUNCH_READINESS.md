@@ -77,6 +77,18 @@ Target: public launch during November 2026, conditional on the release gates bel
 
 See [SUPABASE_MIGRATION_LEDGER_AUDIT.md](SUPABASE_MIGRATION_LEDGER_AUDIT.md) for the exact production ledger and safe recovery sequence.
 
+## Follow-up audit — 7 November 2026, 13:05 UTC
+
+- Draft PR #51 adds subscription-period validation, course payment-backing checks, and a shared transaction-scoped lock for refund/repurchase transitions. GitHub Actions run #59 passed on its exact head for Deno payment-function checks, environment/webhook tests, and static migration assertions. It remains draft and unmerged; no PostgreSQL concurrency test or migration replay has passed.
+- The refund/repurchase proposal checks whether another paid, not-fully-refunded payment for the same learner/course still backs access before revoking the canonical enrollment and certificate. It does not add a separate entitlement table or `payment_id` column to enrollments. Keep issue #49 open until independent review, certificate lifecycle decisions, and executable concurrency tests pass.
+- PR #44 contains purpose-specific already-paid verification in its candidate Edge Function and database confirmation guards. Those changes are not deployed. Paid-but-unfulfilled recovery after account reactivation remains unresolved; keep issue #50 open.
+- Migration recovery checked both missing baseline SQL paths across all 50 active Git branches; neither file was present on any checked branch. Commit-message searches did not identify a baseline/schema migration commit. This does not rule out external backups, database export artifacts or other authoritative sources.
+- Latest Supabase Security Advisor: 4 RLS-enabled tables have no policies (`private.platform_admins`, `public.audit_logs`, `public.newsletter_subscribers`, `public.payment_refunds`); 1 anonymous SECURITY DEFINER function (`verify_course_certificate`); 15 authenticated SECURITY DEFINER functions; and leaked-password protection disabled. The functions require individual authorization review; do not blanket-revoke. Some no-policy tables are intentionally backend-only, but grants must remain tightly scoped.
+- Latest Performance Advisor reports 17 unused indexes. Treat these as informational only; do not drop indexes without workload evidence and a measured review.
+- Production remains on the single Supabase `main` branch with status `MIGRATIONS_FAILED`. No isolated staging database exists. Do not create a paid development branch until the organisation, cost estimate and explicit user approval are obtained.
+
+No production migration, Edge Function, secret, Paystack setting, payment, refund, transfer, payout, or customer/student record was changed during this follow-up.
+
 ## Release rule
 
 The November objective is to launch the public platform only after legal, business, provider-approval, security, backup, payment and critical end-to-end gates have been completed and signed off. If live payment readiness is not achieved in time, a limited public launch may proceed only with checkout visibly disabled and no promise of paid services until payments are activated.
