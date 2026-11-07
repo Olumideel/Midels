@@ -39,7 +39,7 @@ BEGIN
   IF EXISTS(SELECT 1 FROM public.product_purchases WHERE payment_id=p.id AND refunded_at IS NOT NULL)
   THEN RETURN jsonb_build_object('recovered',false,'reason','purchase_refunded'); END IF;
   INSERT INTO public.product_purchases(product_id,buyer_id,seller_id,payment_id,amount_minor,currency)
-  VALUES(d.id,p.user_id,d.seller_id,p.id,p.amount_minor,d.currency) ON CONFLICT(payment_id) DO NOTHING;
+  VALUES(d.id,p.user_id,d.seller_id,p.id,p.amount_minor,p.currency) ON CONFLICT(payment_id) DO NOTHING;
   IF NOT EXISTS(SELECT 1 FROM public.product_purchases WHERE payment_id=p.id AND product_id=d.id
   AND buyer_id=p.user_id AND seller_id=d.seller_id AND refunded_at IS NULL)
   THEN RETURN jsonb_build_object('recovered',false,'reason','purchase_conflict'); END IF;
