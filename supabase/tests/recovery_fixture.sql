@@ -3,6 +3,7 @@ DO $$ BEGIN CREATE ROLE anon NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL;
 DO $$ BEGIN CREATE ROLE authenticated NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE ROLE service_role NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE TYPE public.account_status AS ENUM ('active','suspended','deleted');
+CREATE TYPE public.notification_type AS ENUM ('system');
 CREATE TABLE public.profiles(id uuid PRIMARY KEY, account_status public.account_status NOT NULL DEFAULT 'active');
 CREATE TABLE public.payments(
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL REFERENCES public.profiles(id),
@@ -21,13 +22,19 @@ CREATE TABLE public.enrollments(
  student_id uuid NOT NULL REFERENCES public.profiles(id), revoked_at timestamptz,
  UNIQUE(course_id,student_id)
 );
-CREATE TABLE public.products(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), seller_id uuid NOT NULL, file_path text);
+CREATE TABLE public.products(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), seller_id uuid NOT NULL, file_path text, title text NOT NULL DEFAULT 'Test product');
 CREATE TABLE public.product_purchases(
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), product_id uuid NOT NULL REFERENCES public.products(id),
  buyer_id uuid NOT NULL REFERENCES public.profiles(id), seller_id uuid NOT NULL REFERENCES public.profiles(id),
  payment_id uuid NOT NULL UNIQUE REFERENCES public.payments(id), amount_minor bigint NOT NULL CHECK(amount_minor>0),
  currency character(3) NOT NULL DEFAULT 'NGN', refunded_at timestamptz,
  CHECK(buyer_id<>seller_id)
+);
+CREATE TABLE public.notifications(
+ id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL REFERENCES public.profiles(id),
+ actor_id uuid REFERENCES public.profiles(id), type public.notification_type NOT NULL,
+ title text NOT NULL, body text, data jsonb NOT NULL DEFAULT '{}',
+ is_read boolean NOT NULL DEFAULT false, created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE TABLE public.subscriptions(
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL REFERENCES public.profiles(id),
