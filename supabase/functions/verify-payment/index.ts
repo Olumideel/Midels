@@ -63,6 +63,17 @@ serve(async req => {
     // This prevents stale "paid" rows from reporting verified access after a refund,
     // revoked course enrollment, or missing subscription/product entitlement.
     if (payment.status === 'paid') {
+      // Recover only payments explicitly blocked because the account was inactive.
+      // The service-role RPC rechecks payment, account, refund and purpose-specific metadata.
+      if (payment.metadata?.entitlement_blocked_reason === 'account_not_active') {
+        const { error: recoveryError } = await admin.rpc('recover_blocked_paystack_entitlement', {
+          p_reference: reference,
+          p_amount_minor: Number(payment.amount_minor),
+          p_currency: String(payment.currency)
+        })
+        if (recoveryError) throw recoveryError
+      }
+
       const { data: entitlementValid, error: entitlementError } = await admin.rpc(rpcName, {
         p_reference: reference,
         p_amount_minor: Number(payment.amount_minor),
