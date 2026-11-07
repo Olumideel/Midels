@@ -50,11 +50,37 @@ begin
     return false;
   end if;
 
+  -- Serialize every course entitlement transition for this learner/course pair.
+  -- Refund and confirmation functions use the identical transaction-scoped key.
+  perform pg_advisory_xact_lock(
+    hashtext(payment_row.metadata->>'course_id'),
+    hashtext(payment_row.user_id::text)
+  );
+
   if payment_row.status='paid' then
+    -- A canonical enrollment alone is insufficient: require at least one
+    -- qualifying paid course payment that has not been fully refunded.
     return exists(
-      select 1 from public.enrollments e
+      select 1
+      from public.enrollments e
       where e.course_id::text=payment_row.metadata->>'course_id'
-        and e.student_id=payment_row.user_id and e.revoked_at is null
+        and e.student_id=payment_row.user_id
+        and e.revoked_at is null
+    )
+    and exists(
+      select 1
+      from public.payments qualifying_payment
+      where qualifying_payment.user_id=payment_row.user_id
+        and qualifying_payment.provider='paystack'
+        and qualifying_payment.purpose='course_enrollment'
+        and qualifying_payment.status='paid'
+        and qualifying_payment.metadata->>'course_id'=payment_row.metadata->>'course_id'
+        and coalesce((
+          select sum(pr.amount_minor)
+          from public.payment_refunds pr
+          where pr.payment_id=qualifying_payment.id
+            and pr.status='processed'
+        ),0) < qualifying_payment.amount_minor
     );
   end if;
   if payment_row.status<>'pending' then return false; end if;
@@ -142,6 +168,10 @@ begin
         and s.provider_reference=p_reference
         and s.plan_code=payment_row.metadata->>'plan_code'
         and s.status in ('active','trialing','past_due')
+        and s.current_period_start is not null
+        and s.current_period_end is not null
+        and s.current_period_start <= now()
+        and s.current_period_end > now()
     );
   end if;
   if payment_row.status<>'pending' then return false; end if;
@@ -277,6 +307,167 @@ begin
 end;
 $function$;
 
+
+-- Serialize refund and repurchase transitions for the canonical course enrollment.
+CREATE OR REPLACE FUNCTION public.record_paystack_refund(
+  p_transaction_reference text,
+  p_refund_reference text,
+  p_amount_minor bigint,
+  p_currency text,
+  p_processed_at timestamp with time zone DEFAULT now()
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO ''
+AS $function$
+declare
+  payment_row public.payments%rowtype;
+  refund_row public.payment_refunds%rowtype;
+  refunded_total bigint;
+  fully_refunded boolean;
+  duplicate_event boolean;
+begin
+  if coalesce(current_setting('request.jwt.claim.role', true), '') <> 'service_role' then
+    raise exception 'not authorized';
+  end if;
+
+  if nullif(trim(p_transaction_reference), '') is null
+     or nullif(trim(p_refund_reference), '') is null
+     or p_amount_minor is null or p_amount_minor <= 0
+     or char_length(trim(coalesce(p_currency, ''))) <> 3 then
+    raise exception 'invalid refund data';
+  end if;
+
+  select * into payment_row
+  from public.payments
+  where reference = p_transaction_reference
+    and provider = 'paystack'
+  for update;
+
+  if not found or payment_row.status not in ('paid', 'refunded') then
+    raise exception 'matching paid Paystack payment not found';
+  end if;
+
+  if upper(trim(payment_row.currency::text)) <> upper(trim(p_currency)) then
+    raise exception 'refund currency does not match payment';
+  end if;
+
+  select exists (
+    select 1 from public.payment_refunds
+    where refund_reference = p_refund_reference
+  ) into duplicate_event;
+
+  insert into public.payment_refunds (
+    payment_id, transaction_reference, refund_reference,
+    amount_minor, currency, status, processed_at
+  )
+  values (
+    payment_row.id, p_transaction_reference, p_refund_reference,
+    p_amount_minor, upper(trim(p_currency))::character(3), 'processed',
+    coalesce(p_processed_at, now())
+  )
+  on conflict (refund_reference) do nothing;
+
+  select * into refund_row
+  from public.payment_refunds
+  where refund_reference = p_refund_reference
+  for update;
+
+  if refund_row.payment_id <> payment_row.id
+     or refund_row.transaction_reference <> p_transaction_reference
+     or refund_row.amount_minor <> p_amount_minor
+     or upper(trim(refund_row.currency::text)) <> upper(trim(p_currency)) then
+    raise exception 'refund reference was already used with different details';
+  end if;
+
+  select coalesce(sum(amount_minor), 0)
+  into refunded_total
+  from public.payment_refunds
+  where payment_id = payment_row.id
+    and status = 'processed';
+
+  if refunded_total > payment_row.amount_minor then
+    raise exception 'cumulative refunds exceed original payment amount';
+  end if;
+
+  fully_refunded := refunded_total >= payment_row.amount_minor
+                    or payment_row.status = 'refunded';
+
+  if fully_refunded then
+    -- This lock is shared with confirm_course_payment. It prevents a delayed
+    -- refund for purchase A from revoking access backed by repurchase B.
+    if payment_row.purpose = 'course_enrollment'
+       and nullif(payment_row.metadata->>'course_id', '') is not null then
+      perform pg_advisory_xact_lock(
+        hashtext(payment_row.metadata->>'course_id'),
+        hashtext(payment_row.user_id::text)
+      );
+    end if;
+
+    update public.payments
+    set status = 'refunded', updated_at = now()
+    where id = payment_row.id
+      and status in ('paid', 'refunded');
+
+    update public.product_purchases
+    set refunded_at = coalesce(refunded_at, coalesce(p_processed_at, now()))
+    where payment_id = payment_row.id;
+
+    if payment_row.purpose = 'course_enrollment'
+       and nullif(payment_row.metadata->>'course_id', '') is not null
+       and not exists (
+         select 1
+         from public.payments qualifying_payment
+         where qualifying_payment.id <> payment_row.id
+           and qualifying_payment.user_id = payment_row.user_id
+           and qualifying_payment.provider = 'paystack'
+           and qualifying_payment.purpose = 'course_enrollment'
+           and qualifying_payment.status = 'paid'
+           and qualifying_payment.metadata->>'course_id' = payment_row.metadata->>'course_id'
+           and coalesce((
+             select sum(pr.amount_minor)
+             from public.payment_refunds pr
+             where pr.payment_id = qualifying_payment.id
+               and pr.status = 'processed'
+           ), 0) < qualifying_payment.amount_minor
+       ) then
+      update public.enrollments
+      set revoked_at = coalesce(revoked_at, coalesce(p_processed_at, now()))
+      where course_id::text = payment_row.metadata->>'course_id'
+        and student_id = payment_row.user_id;
+
+      update public.course_certificates
+      set revoked_at = coalesce(revoked_at, coalesce(p_processed_at, now()))
+      where course_id::text = payment_row.metadata->>'course_id'
+        and student_id = payment_row.user_id;
+    end if;
+
+    if payment_row.purpose = 'subscription' then
+      update public.subscriptions
+      set status = 'cancelled',
+          current_period_end = least(coalesce(current_period_end, now()), now()),
+          updated_at = now()
+      where provider = 'paystack'
+        and provider_reference = p_transaction_reference
+        and status in ('active', 'trialing', 'past_due');
+    end if;
+  end if;
+
+  return jsonb_build_object(
+    'processed', true,
+    'duplicate', duplicate_event,
+    'refunded_total_minor', refunded_total,
+    'original_amount_minor', payment_row.amount_minor,
+    'fully_refunded', fully_refunded
+  );
+end;
+$function$;
+
+REVOKE ALL ON FUNCTION public.record_paystack_refund(text,text,bigint,text,timestamp with time zone) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.record_paystack_refund(text,text,bigint,text,timestamp with time zone) TO service_role;
+
+
 -- Keep these confirmation entry points restricted to trusted server-side calls.
 REVOKE ALL ON FUNCTION public.confirm_course_payment(text,bigint,text,timestamp with time zone) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.confirm_paystack_payment(text,bigint,text,timestamp with time zone) FROM PUBLIC, anon, authenticated;
@@ -311,6 +502,10 @@ BEGIN
     IF position('payment_row.provider IS DISTINCT FROM ''paystack''' IN function_definition)=0 THEN
       RAISE EXCEPTION 'Provider binding missing from %', signature;
     END IF;
+    IF signature = 'public.confirm_course_payment(text,bigint,text,timestamp with time zone)'
+       AND position('pg_advisory_xact_lock' IN function_definition)=0 THEN
+      RAISE EXCEPTION 'Course confirmation must serialize with refunds';
+    END IF;
     IF NOT coalesce((SELECT proconfig @> ARRAY['search_path=""'] FROM pg_proc WHERE oid=function_oid::oid),false) THEN
       RAISE EXCEPTION 'Empty search_path missing from %', signature;
     END IF;
@@ -322,5 +517,30 @@ BEGIN
       RAISE EXCEPTION 'service_role EXECUTE missing on %', signature;
     END IF;
   END LOOP;
+
+  IF position('pg_advisory_xact_lock' IN pg_get_functiondef(
+       'public.record_paystack_refund(text,text,bigint,text,timestamp with time zone)'::regprocedure
+     ))=0
+     OR position('qualifying_payment.status = ''paid''' IN pg_get_functiondef(
+       'public.record_paystack_refund(text,text,bigint,text,timestamp with time zone)'::regprocedure
+     ))=0
+     OR position('qualifying_payment.id <> payment_row.id' IN pg_get_functiondef(
+       'public.record_paystack_refund(text,text,bigint,text,timestamp with time zone)'::regprocedure
+     ))=0 THEN
+    RAISE EXCEPTION 'Refund processing must preserve access backed by another paid purchase';
+  END IF;
+
+  function_oid := to_regprocedure('public.record_paystack_refund(text,text,bigint,text,timestamp with time zone)');
+  IF function_oid IS NULL THEN
+    RAISE EXCEPTION 'Paystack refund RPC is missing';
+  END IF;
+  IF NOT coalesce((SELECT proconfig @> ARRAY['search_path=""'] FROM pg_proc WHERE oid=function_oid::oid),false) THEN
+    RAISE EXCEPTION 'Empty search_path missing from record_paystack_refund';
+  END IF;
+  IF has_function_privilege('anon',function_oid,'EXECUTE')
+     OR has_function_privilege('authenticated',function_oid,'EXECUTE')
+     OR NOT has_function_privilege('service_role',function_oid,'EXECUTE') THEN
+    RAISE EXCEPTION 'record_paystack_refund must remain service_role-only';
+  END IF;
 END;
 $migration_assertions$;
