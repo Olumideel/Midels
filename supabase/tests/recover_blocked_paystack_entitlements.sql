@@ -13,6 +13,8 @@ BEGIN
  SELECT public.recover_blocked_paystack_entitlement(ref,250000,'NGN') INTO result;
  IF result->>'recovered'<>'true' OR NOT EXISTS(SELECT 1 FROM public.enrollments WHERE enrollments.course_id=v_course_id AND student_id=buyer AND revoked_at IS NULL)
  THEN RAISE EXCEPTION 'Course recovery failed: %',result; END IF;
+ IF EXISTS(SELECT 1 FROM public.payments WHERE reference=ref AND metadata ? 'entitlement_blocked_reason')
+ THEN RAISE EXCEPTION 'Course recovery did not clear the blocked marker'; END IF;
 
  INSERT INTO public.products(id,seller_id,file_path) VALUES(v_product_id,seller,seller::text||'/'||v_product_id::text||'/asset.pdf');
  ref:='GCH-'||gen_random_uuid()::text;
@@ -41,6 +43,14 @@ BEGIN
  SELECT public.recover_blocked_paystack_entitlement(ref,10000,'NGN') INTO result;
  IF result->>'recovered'<>'false' OR result->>'reason'<>'fully_refunded'
  THEN RAISE EXCEPTION 'Fully refunded payment was not blocked: %',result; END IF;
+
+ ref:='GCH-'||gen_random_uuid()::text;
+ INSERT INTO public.payments(user_id,reference,amount_minor,currency,status,purpose,metadata,paid_at)
+ VALUES(buyer,ref,99000,'NGN','paid','subscription',
+ jsonb_build_object('plan_code','pro','billing_interval','monthly','entitlement_blocked_reason','account_not_active'),now()-interval '2 months');
+ SELECT public.recover_blocked_paystack_entitlement(ref,99000,'NGN') INTO result;
+ IF result->>'recovered'<>'false' OR result->>'reason'<>'subscription_period_expired'
+ THEN RAISE EXCEPTION 'Expired subscription recovery was not blocked: %',result; END IF;
 
  UPDATE public.profiles SET account_status='suspended' WHERE id=buyer;
  ref:='GCH-'||gen_random_uuid()::text;
