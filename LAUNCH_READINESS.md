@@ -1,8 +1,12 @@
 # Global Culinary Hub — launch readiness
 
-Last reviewed: 2 November 2026
+Last reviewed: 7 November 2026
 
 This checklist distinguishes implemented code from external approvals and production verification. A checked item means the underlying code or database setting was inspected; it does not mean the feature has passed a live browser test.
+
+## November launch objective
+
+Target: public launch during November 2026, conditional on the release gates below. This is a target, not a guaranteed date. If payment, legal, security or recovery checks are incomplete, launch with payments disabled rather than accepting unsafe transactions.
 
 ## Implemented foundations
 
@@ -61,16 +65,24 @@ This checklist distinguishes implemented code from external approvals and produc
 - [ ] Perform accessibility, performance, security and dependency reviews.
 - [ ] Publish accurate support hours, refund response targets and service-status communications.
 
-## Current launch constraints
+## Current verified launch blockers — 7 November 2026
 
-- The Supabase project is on the Free plan and in the US West region.
-- Paystack checkout remains test-only. No live charges or seller settlements are enabled.
-- Public course and marketplace listings support indicative currency display; the source prices remain NGN.
-- Paystack checkout and merchant settlement remain NGN; no foreign-currency charges or international currency settlement are enabled.
-- Seller payout onboarding and split settlements are not implemented.
-- School plan and some subscription entitlement controls remain in development.
-- The latest code has passed static JavaScript syntax checks, but the latest interface changes still require live browser testing.
+- Supabase production migration ledger does not match the tracked `main` migration directory. Supabase Preview logs report `Remote migration versions not found in local migrations directory.`
+- Production has recorded 31 migration versions, while the repository's current `supabase/migrations/` directory contains only seven files. The baseline and many earlier migration files are absent; several later migration timestamps also disagree.
+- Production Supabase branch status is `MIGRATIONS_FAILED`; no isolated development branch was available during the latest read-only check.
+- A course refund/repurchase race remains: a delayed refund for an earlier purchase can revoke a later enrollment for the same student/course because the current enrollment record is not tied to its originating payment.
+- Payment Edge Function production version remains test-only. Already-paid payment recovery still needs stronger purpose-specific entitlement checks.
+- Static GitHub checks have passed for several candidate changes, but those checks do not prove SQL migration replay or end-to-end payment correctness.
+- Paystack business/KYC approval status has not been independently verified from the provider dashboard.
+
+See [SUPABASE_MIGRATION_LEDGER_AUDIT.md](SUPABASE_MIGRATION_LEDGER_AUDIT.md) for the exact production ledger and safe recovery sequence.
 
 ## Release rule
 
+The November objective is to launch the public platform only after legal, business, provider-approval, security, backup, payment and critical end-to-end gates have been completed and signed off. If live payment readiness is not achieved in time, a limited public launch may proceed only with checkout visibly disabled and no promise of paid services until payments are activated.
+
 Do not announce a genuine international production launch until the legal, business, provider-approval, security, backup, payment, seller-settlement and end-to-end testing items above have been completed and signed off.
+
+## Payment safety
+
+No live charges, seller settlements, production migrations or production Edge Function deployments are authorised by this readiness document. Live mode remains disabled until the release gates are verified and the required production approvals are explicitly given.
