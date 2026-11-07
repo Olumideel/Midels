@@ -1,8 +1,12 @@
 # Global Culinary Hub — launch readiness
 
-Last reviewed: 2 November 2026
+Last reviewed: 7 November 2026
 
 This checklist distinguishes implemented code from external approvals and production verification. A checked item means the underlying code or database setting was inspected; it does not mean the feature has passed a live browser test.
+
+## November launch objective
+
+Target: public launch during November 2026, conditional on the release gates below. This is a target, not a guaranteed date. If payment, legal, security or recovery checks are incomplete, launch with payments disabled rather than accepting unsafe transactions.
 
 ## Implemented foundations
 
@@ -61,16 +65,36 @@ This checklist distinguishes implemented code from external approvals and produc
 - [ ] Perform accessibility, performance, security and dependency reviews.
 - [ ] Publish accurate support hours, refund response targets and service-status communications.
 
-## Current launch constraints
+## Current verified launch blockers — 7 November 2026
 
-- The Supabase project is on the Free plan and in the US West region.
-- Paystack checkout remains test-only. No live charges or seller settlements are enabled.
-- Public course and marketplace listings support indicative currency display; the source prices remain NGN.
-- Paystack checkout and merchant settlement remain NGN; no foreign-currency charges or international currency settlement are enabled.
-- Seller payout onboarding and split settlements are not implemented.
-- School plan and some subscription entitlement controls remain in development.
-- The latest code has passed static JavaScript syntax checks, but the latest interface changes still require live browser testing.
+- Supabase production migration ledger does not match the tracked `main` migration directory. Supabase Preview logs report `Remote migration versions not found in local migrations directory.`
+- Production has recorded 31 migration versions, while the repository's current `supabase/migrations/` directory contains only seven files. The baseline and many earlier migration files are absent; several later migration timestamps also disagree.
+- Production Supabase branch status is `MIGRATIONS_FAILED`; no isolated development branch was available during the latest read-only check.
+- A course refund/repurchase race remains: a delayed refund for an earlier purchase can revoke a later enrollment for the same student/course because the current enrollment record is not tied to its originating payment.
+- Payment Edge Function production version remains test-only. Already-paid payment recovery still needs stronger purpose-specific entitlement checks.
+- Static GitHub checks have passed for several candidate changes, but those checks do not prove SQL migration replay or end-to-end payment correctness.
+- Paystack business/KYC approval status has not been independently verified from the provider dashboard.
+
+See [SUPABASE_MIGRATION_LEDGER_AUDIT.md](SUPABASE_MIGRATION_LEDGER_AUDIT.md) for the exact production ledger and safe recovery sequence.
+
+## Follow-up audit — 7 November 2026, 13:05 UTC
+
+- Draft PR #51 adds subscription-period validation, course payment-backing checks, and a shared transaction-scoped lock for refund/repurchase transitions. GitHub Actions run #59 passed on its exact head for Deno payment-function checks, environment/webhook tests, and static migration assertions. It remains draft and unmerged; no PostgreSQL concurrency test or migration replay has passed.
+- The refund/repurchase proposal checks whether another paid, not-fully-refunded payment for the same learner/course still backs access before revoking the canonical enrollment and certificate. It does not add a separate entitlement table or `payment_id` column to enrollments. Keep issue #49 open until independent review, certificate lifecycle decisions, and executable concurrency tests pass.
+- PR #44 contains purpose-specific already-paid verification in its candidate Edge Function and database confirmation guards. Those changes are not deployed. Paid-but-unfulfilled recovery after account reactivation remains unresolved; keep issue #50 open.
+- Migration recovery checked both missing baseline SQL paths across all 50 active Git branches; neither file was present on any checked branch. Commit-message searches did not identify a baseline/schema migration commit. This does not rule out external backups, database export artifacts or other authoritative sources.
+- Latest Supabase Security Advisor: 4 RLS-enabled tables have no policies (`private.platform_admins`, `public.audit_logs`, `public.newsletter_subscribers`, `public.payment_refunds`); 1 anonymous SECURITY DEFINER function (`verify_course_certificate`); 15 authenticated SECURITY DEFINER functions; and leaked-password protection disabled. The functions require individual authorization review; do not blanket-revoke. Some no-policy tables are intentionally backend-only, but grants must remain tightly scoped.
+- Latest Performance Advisor reports 17 unused indexes. Treat these as informational only; do not drop indexes without workload evidence and a measured review.
+- Production remains on the single Supabase `main` branch with status `MIGRATIONS_FAILED`. No isolated staging database exists. Do not create a paid development branch until the organisation, cost estimate and explicit user approval are obtained.
+
+No production migration, Edge Function, secret, Paystack setting, payment, refund, transfer, payout, or customer/student record was changed during this follow-up.
 
 ## Release rule
 
+The November objective is to launch the public platform only after legal, business, provider-approval, security, backup, payment and critical end-to-end gates have been completed and signed off. If live payment readiness is not achieved in time, a limited public launch may proceed only with checkout visibly disabled and no promise of paid services until payments are activated.
+
 Do not announce a genuine international production launch until the legal, business, provider-approval, security, backup, payment, seller-settlement and end-to-end testing items above have been completed and signed off.
+
+## Payment safety
+
+No live charges, seller settlements, production migrations or production Edge Function deployments are authorised by this readiness document. Live mode remains disabled until the release gates are verified and the required production approvals are explicitly given.
