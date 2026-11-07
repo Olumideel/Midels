@@ -529,5 +529,18 @@ BEGIN
      ))=0 THEN
     RAISE EXCEPTION 'Refund processing must preserve access backed by another paid purchase';
   END IF;
+
+  function_oid := to_regprocedure('public.record_paystack_refund(text,text,bigint,text,timestamp with time zone)');
+  IF function_oid IS NULL THEN
+    RAISE EXCEPTION 'Paystack refund RPC is missing';
+  END IF;
+  IF NOT coalesce((SELECT proconfig @> ARRAY['search_path=""'] FROM pg_proc WHERE oid=function_oid::oid),false) THEN
+    RAISE EXCEPTION 'Empty search_path missing from record_paystack_refund';
+  END IF;
+  IF has_function_privilege('anon',function_oid,'EXECUTE')
+     OR has_function_privilege('authenticated',function_oid,'EXECUTE')
+     OR NOT has_function_privilege('service_role',function_oid,'EXECUTE') THEN
+    RAISE EXCEPTION 'record_paystack_refund must remain service_role-only';
+  END IF;
 END;
 $migration_assertions$;
