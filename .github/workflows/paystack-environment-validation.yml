@@ -111,6 +111,8 @@ jobs:
           assert "qualifying_payment.status = 'paid'" in provider, "Only another paid purchase may preserve course access"
           assert "qualifying_payment.metadata->>'course_id' = payment_row.metadata->>'course_id'" in provider, "Backing purchase must match the same course"
           assert "pg_advisory_xact_lock" in provider, "Course confirmation must use the shared refund/repurchase lock"
+          assert provider.count("hashtext(payment_row.metadata->>'course_id')") >= 2, "Refund and confirmation must lock the same course key"
+          assert provider.count("hashtext(payment_row.user_id::text)") >= 2, "Refund and confirmation must lock the same learner key"
           assert "set refunded_at = coalesce(refunded_at" in refunds, "Full refunds must mark digital-product purchases refunded"
           assert "set status = 'cancelled'" in refunds and "provider_reference = p_transaction_reference" in refunds, "Full refunds must cancel the matching Paystack subscription"
           assert "if fully_refunded then" in refunds, "Partial refunds must not enter the entitlement-revocation branch"
