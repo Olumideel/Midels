@@ -1,7 +1,6 @@
 SET request.jwt.claim.role = 'service_role';
 DO $test$
-DECLARE
- buyer uuid:=gen_random_uuid(); seller uuid:=gen_random_uuid(); v_course_id uuid:=gen_random_uuid();
+DECLARE buyer uuid:=gen_random_uuid(); seller uuid:=gen_random_uuid(); v_course_id uuid:=gen_random_uuid();
  v_product_id uuid:=gen_random_uuid(); ref text; result jsonb; v_payment_id uuid;
 BEGIN
  INSERT INTO public.profiles(id,account_status) VALUES(buyer,'active'),(seller,'active');
@@ -25,6 +24,13 @@ BEGIN
  SELECT public.recover_blocked_paystack_entitlement(ref,120000,'NGN') INTO result;
  IF result->>'recovered'<>'true' OR NOT EXISTS(SELECT 1 FROM public.product_purchases WHERE product_purchases.payment_id=v_payment_id AND currency='NGN')
  THEN RAISE EXCEPTION 'Product recovery/currency binding failed: %',result; END IF;
+ IF (SELECT count(*) FROM public.notifications WHERE data->>'payment_reference'=ref)<>2
+ THEN RAISE EXCEPTION 'Product recovery did not create buyer and seller notifications'; END IF;
+ SELECT public.recover_blocked_paystack_entitlement(ref,120000,'NGN') INTO result;
+ IF result->>'recovered'<>'false' OR result->>'reason'<>'not_account_blocked'
+ THEN RAISE EXCEPTION 'Repeated product recovery was not safely rejected: %',result; END IF;
+ IF (SELECT count(*) FROM public.notifications WHERE data->>'payment_reference'=ref)<>2
+ THEN RAISE EXCEPTION 'Repeated recovery duplicated product notifications'; END IF;
 
  ref:='GCH-'||gen_random_uuid()::text;
  INSERT INTO public.payments(user_id,reference,amount_minor,currency,status,purpose,metadata,paid_at)
