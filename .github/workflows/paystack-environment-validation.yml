@@ -1,13 +1,15 @@
 name: Paystack environment validation
 on:
   pull_request:
-    branches: [main, feat/paystack-live-mode-guarded, release/paystack-guarded-integrated-candidate, fix/paystack-repeat-verification-entitlement]
+    branches: [main, feat/paystack-live-mode-guarded, release/paystack-guarded-integrated-candidate, fix/paystack-repeat-verification-entitlement, fix/paystack-period-and-course-payment-backing]
     paths:
       - "supabase/functions/**"
+      - "supabase/tests/**"
       - "supabase/migrations/20261106141500_enforce_active_account_on_member_definer_rpcs.sql"
       - "supabase/migrations/20261106141600_restrict_backend_only_table_grants.sql"
       - "supabase/migrations/20261106143600_require_paystack_provider_for_confirmation.sql"
       - "supabase/migrations/20261106130000_harden_paystack_refund_accounting.sql"
+      - "supabase/migrations/20261107133000_recover_blocked_paystack_entitlements.sql"
       - ".github/workflows/paystack-environment-validation.yml"
 permissions:
   contents: read
@@ -117,5 +119,51 @@ jobs:
           assert "set status = 'cancelled'" in refunds and "provider_reference = p_transaction_reference" in refunds, "Full refunds must cancel the matching Paystack subscription"
           assert "if fully_refunded then" in refunds, "Partial refunds must not enter the entitlement-revocation branch"
           assert "from public, anon, authenticated" in refunds and "to service_role" in refunds, "Refund RPC must remain service-role only"
-          print("Database security and refund-accounting migration assertions passed.")
+          recovery = (root / "20261107133000_recover_blocked_paystack_entitlements.sql").read_text().lower()
+          for required in (
+              "entitlement_blocked_reason' is distinct from 'account_not_active'",
+              "payment_refunds",
+              "pg_advisory_xact_lock",
+              "on conflict(course_id,student_id) do update set revoked_at=null",
+              "where payment_id=p.id and refunded_at is not null",
+              "values(d.id,p.user_id,d.seller_id,p.id,p.amount_minor,p.currency)",
+              "subscription_period_expired",
+              "newer_active_subscription_exists",
+              "revoke all on function public.recover_blocked_paystack_entitlement(text,bigint,text) from public,anon,authenticated",
+              "grant execute on function public.recover_blocked_paystack_entitlement(text,bigint,text) to service_role",
+          ):
+              assert required in recovery, f"Missing blocked-payment recovery guard: {required}"
+          assert "recover_blocked_paystack_entitlement" in verify, "Paid verification must invoke guarded entitlement recovery"
+          assert "entitlement_blocked_reason === 'account_not_active'" in verify, "Recovery must be restricted to the inactive-account marker"
+          print("Database security, refund-accounting, and blocked-entitlement recovery assertions passed.")
           PY
+
+  recovery-postgres-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: gch_recovery_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d gch_recovery_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create isolated recovery test schema
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d gch_recovery_test -v ON_ERROR_STOP=1 -f supabase/tests/recovery_fixture.sql
+      - name: Apply candidate recovery migration in isolated PostgreSQL
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d gch_recovery_test -v ON_ERROR_STOP=1 -f supabase/migrations/20261107133000_recover_blocked_paystack_entitlements.sql
+      - name: Exercise course, product, subscription, refund and account guards
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d gch_recovery_test -v ON_ERROR_STOP=1 -f supabase/tests/recover_blocked_paystack_entitlements.sql
