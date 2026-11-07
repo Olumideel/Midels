@@ -81,3 +81,27 @@ This is consistent with the ledger/file mismatch above. The project currently ex
 ## Safety status
 
 This audit is read-only. It does not modify production schema, migration history, secrets, Edge Functions, payment records, or customer/student data. Live Paystack charges remain disabled.
+
+
+## Additional payment-entitlement findings (7 November 2026)
+
+Read-only inspection of the production function definitions and table metadata confirmed a course refund/repurchase race:
+
+- `confirm_course_payment` reuses the unique canonical enrollment for a `(course_id, student_id)` pair and clears `revoked_at` on a later successful purchase.
+- `record_paystack_refund` currently revokes that enrollment and the student's course certificate by course/student, without checking whether another valid paid purchase still backs access.
+- Therefore, after purchase A is refunded and purchase B restores the shared enrollment, a delayed or replayed full-refund event for A can revoke access associated with B.
+- `lesson_progress` and `course_certificates` reference the canonical `enrollment_id`; a per-purchase enrollment redesign is not a safe drop-in change.
+
+The webhook source validates test-domain refund notifications and delegates accounting to `record_paystack_refund`. The durable correction must therefore be made in the database entitlement transition, not only in webhook parsing.
+
+### Required regression coverage before release
+
+- Purchase A → full refund A → purchase B → replay/delayed duplicate refund A; B must retain access.
+- Concurrent refund and repurchase for the same student/course.
+- Partial refunds and multiple partial refunds that cumulatively reach the original amount.
+- Duplicate refund reference with mismatched payment, amount or currency.
+- Certificate lifecycle and preservation of lesson progress across refund/repurchase.
+
+A lower-risk design to evaluate is to serialize refund and confirmation transitions with the same transaction-scoped student/course lock, retain the canonical enrollment/progress row, and revoke it only when no other qualifying paid purchase remains. Certificate handling needs an explicit policy rather than a broad course/student revocation.
+
+This is a verified defect and a repair design, **not a completed code fix**. It is tracked in [issue #49](https://github.com/Olumideel/Midels/issues/49). Production remains unchanged.
