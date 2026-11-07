@@ -51,10 +51,29 @@ begin
   end if;
 
   if payment_row.status='paid' then
+    -- A canonical enrollment alone is insufficient: require at least one
+    -- qualifying paid course payment that has not been fully refunded.
     return exists(
-      select 1 from public.enrollments e
+      select 1
+      from public.enrollments e
       where e.course_id::text=payment_row.metadata->>'course_id'
-        and e.student_id=payment_row.user_id and e.revoked_at is null
+        and e.student_id=payment_row.user_id
+        and e.revoked_at is null
+    )
+    and exists(
+      select 1
+      from public.payments qualifying_payment
+      where qualifying_payment.user_id=payment_row.user_id
+        and qualifying_payment.provider='paystack'
+        and qualifying_payment.purpose='course_enrollment'
+        and qualifying_payment.status='paid'
+        and qualifying_payment.metadata->>'course_id'=payment_row.metadata->>'course_id'
+        and coalesce((
+          select sum(pr.amount_minor)
+          from public.payment_refunds pr
+          where pr.payment_id=qualifying_payment.id
+            and pr.status='processed'
+        ),0) < qualifying_payment.amount_minor
     );
   end if;
   if payment_row.status<>'pending' then return false; end if;
@@ -142,6 +161,10 @@ begin
         and s.provider_reference=p_reference
         and s.plan_code=payment_row.metadata->>'plan_code'
         and s.status in ('active','trialing','past_due')
+        and s.current_period_start is not null
+        and s.current_period_end is not null
+        and s.current_period_start <= now()
+        and s.current_period_end > now()
     );
   end if;
   if payment_row.status<>'pending' then return false; end if;
