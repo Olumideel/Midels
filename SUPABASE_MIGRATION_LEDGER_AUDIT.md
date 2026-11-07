@@ -105,3 +105,29 @@ The webhook source validates test-domain refund notifications and delegates acco
 A lower-risk design to evaluate is to serialize refund and confirmation transitions with the same transaction-scoped student/course lock, retain the canonical enrollment/progress row, and revoke it only when no other qualifying paid purchase remains. Certificate handling needs an explicit policy rather than a broad course/student revocation.
 
 This is a verified defect and a repair design, **not a completed code fix**. It is tracked in [issue #49](https://github.com/Olumideel/Midels/issues/49). Production remains unchanged.
+
+
+## Payment verification consistency finding (7 November 2026)
+
+A read-only review of `supabase/functions/verify-payment/index.ts` and its frontend caller in `app.js` found a second, related defect:
+
+- When a payment row is already marked `paid`, the verification Edge Function immediately returns `{ status: 'paid', verified: true, purpose }`.
+- That early return does not check whether the associated entitlement remains active.
+- The frontend interprets this response as a successful purchase and displays a course-enrollment, product-ready, or subscription-active success message.
+- A fully refunded course payment can therefore be reported as successful even after the enrollment was revoked. This is a misleading verification result even if the subsequent dashboard query correctly withholds access.
+
+The issue is tracked in [issue #50](https://github.com/Olumideel/Midels/issues/50) and linked to the refund/repurchase race in [issue #49](https://github.com/Olumideel/Midels/issues/49).
+
+### Required correction and regression coverage
+
+Do not simply remove the early return. Define purpose-specific entitlement checks first:
+
+- Course: active canonical enrollment backed by at least one qualifying paid, non-refunded originating course payment.
+- Digital product: exact purchase row exists, is not refunded, and references the same paid payment.
+- Subscription: subscription is active, within its valid period, and associated with the expected provider reference.
+
+Return a distinct non-success result when the payment was historically paid but no longer grants access. Add tests for refunded course/product purchases, cancelled or expired subscriptions, ordinary active purchases, and the purchase-A/refund-A/repurchase-B/delayed-refund-A sequence.
+
+Repository searches during this pass did not locate an existing test suite covering these payment/refund paths. This is not proof that no external test environment exists, but it means no regression suite has yet been demonstrated. The current migration-history mismatch also prevents a trustworthy full database replay in the available workflow.
+
+This finding is a verified code-path defect and test requirement, **not a completed fix**. No production code, database, payment, enrollment, certificate, secret, or Edge Function was changed.
