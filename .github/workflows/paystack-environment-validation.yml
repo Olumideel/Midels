@@ -4,6 +4,7 @@ on:
     branches: [main, feat/paystack-live-mode-guarded, release/paystack-guarded-integrated-candidate, fix/paystack-repeat-verification-entitlement, fix/paystack-period-and-course-payment-backing]
     paths:
       - "supabase/functions/**"
+      - "supabase/tests/**"
       - "supabase/migrations/20261106141500_enforce_active_account_on_member_definer_rpcs.sql"
       - "supabase/migrations/20261106141600_restrict_backend_only_table_grants.sql"
       - "supabase/migrations/20261106143600_require_paystack_provider_for_confirmation.sql"
