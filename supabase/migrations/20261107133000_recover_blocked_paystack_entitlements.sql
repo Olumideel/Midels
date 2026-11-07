@@ -3,7 +3,7 @@ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $f$
 DECLARE
  p public.payments%rowtype; c public.courses%rowtype; d public.products%rowtype;
  refunded bigint; paid timestamptz; finish timestamptz; plan text; interval_name text;
- s public.subscriptions%rowtype; eid uuid;
+ s public.subscriptions%rowtype; eid uuid; purchase_id uuid;
 BEGIN
  IF coalesce(current_setting('request.jwt.claim.role',true),'') <> 'service_role' THEN RAISE EXCEPTION 'not authorized'; END IF;
  SELECT * INTO p FROM public.payments WHERE reference=p_reference FOR UPDATE;
@@ -39,10 +39,20 @@ BEGIN
   IF EXISTS(SELECT 1 FROM public.product_purchases WHERE payment_id=p.id AND refunded_at IS NOT NULL)
   THEN RETURN jsonb_build_object('recovered',false,'reason','purchase_refunded'); END IF;
   INSERT INTO public.product_purchases(product_id,buyer_id,seller_id,payment_id,amount_minor,currency)
-  VALUES(d.id,p.user_id,d.seller_id,p.id,p.amount_minor,p.currency) ON CONFLICT(payment_id) DO NOTHING;
+  VALUES(d.id,p.user_id,d.seller_id,p.id,p.amount_minor,p.currency)
+  ON CONFLICT(payment_id) DO NOTHING RETURNING id INTO purchase_id;
   IF NOT EXISTS(SELECT 1 FROM public.product_purchases WHERE payment_id=p.id AND product_id=d.id
   AND buyer_id=p.user_id AND seller_id=d.seller_id AND refunded_at IS NULL)
   THEN RETURN jsonb_build_object('recovered',false,'reason','purchase_conflict'); END IF;
+  -- Match the normal checkout notifications, but only emit them when this recovery creates the purchase.
+  IF purchase_id IS NOT NULL THEN
+   INSERT INTO public.notifications(user_id,actor_id,type,title,body,data)
+   VALUES
+    (d.seller_id,p.user_id,'system','New digital product sale','Your product "'||d.title||'" has a verified purchase.',
+      jsonb_build_object('product_id',d.id,'payment_reference',p.reference)),
+    (p.user_id,d.seller_id,'system','Purchase confirmed','Your purchase of "'||d.title||'" is confirmed. Your download is ready.',
+      jsonb_build_object('product_id',d.id,'payment_reference',p.reference));
+  END IF;
   UPDATE public.payments SET metadata=metadata-'entitlement_blocked_reason'-'entitlement_blocked_at',updated_at=now() WHERE id=p.id;
   RETURN jsonb_build_object('recovered',true,'purpose',p.purpose);
  ELSIF p.purpose='subscription' THEN
